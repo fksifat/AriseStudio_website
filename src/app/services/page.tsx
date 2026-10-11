@@ -7,7 +7,12 @@ import {
   Headphones, 
   CheckCircle2, 
   ArrowRight, 
-  Zap 
+  Zap,
+  Sparkles,
+  GitBranch,
+  FileCheck2,
+  Lock,
+  Headset
 } from "lucide-react";
 import { servicesData } from "@/data/companyData";
 
@@ -16,27 +21,53 @@ export const metadata: Metadata = {
   description: "Explore AriseStudio's core services: E-Commerce Automation, Custom ERP & CRM Development, Robotic Process Automation, and 24/7 Managed IT Support.",
 };
 
+const deliverables = [
+  {
+    icon: GitBranch,
+    title: "Complete Source Code & Git Repository",
+    desc: "100% intellectual property ownership with modular, documented TypeScript & Python code."
+  },
+  {
+    icon: FileCheck2,
+    title: "Database Schemas & Automated Migrations",
+    desc: "Idempotent migration scripts and entity diagrams ensuring zero data loss during version upgrades."
+  },
+  {
+    icon: Lock,
+    title: "CI/CD & Infrastructure as Code (IaC)",
+    desc: "Automated Docker, Kubernetes, or serverless build scripts with automated secret rotation."
+  },
+  {
+    icon: Headset,
+    title: "30-Day Post-Launch Hypercare",
+    desc: "Direct engineer-to-client Slack / WhatsApp bridge for instant bug fixes and operational guidance."
+  }
+];
+
 export default function ServicesPage() {
   return (
-    <div className="pt-32 pb-24 relative">
+    <div className="pt-32 pb-24 relative bg-[#09101d] overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#004157]/25 via-[#0a814f]/15 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-[800px] right-0 w-[500px] h-[500px] bg-[#004157]/20 blur-[130px] pointer-events-none -z-10" />
 
       {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 text-center">
-        <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-          Our Specializations
+        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase text-emerald-300 bg-[#004157]/40 border border-emerald-500/30">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          Technical Specializations & Pods
         </span>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white mt-4 tracking-tight">
-          Enterprise-Grade Automation & Systems Engineering
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mt-4 tracking-tight">
+          Bespoke Automation Engines & <br className="hidden sm:inline" />
+          <span className="gradient-text-teal-emerald">Enterprise Systems Architecture</span>
         </h1>
-        <p className="mt-4 text-lg text-slate-300 max-w-3xl mx-auto">
-          We replace fragmented tools, fragile spreadsheets, and repetitive human labor with resilient, custom software engines designed to scale with your ambition.
+        <p className="mt-4 text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
+          We replace fragmented spreadsheets, manual data transcription, and brittle off-the-shelf software with resilient systems engineered around your exact business model.
         </p>
       </div>
 
       {/* Service Blocks */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
         {servicesData.map((service, index) => {
           let IconComp = ShoppingCart;
           if (service.id === "erp-crm") IconComp = Database;
@@ -49,15 +80,15 @@ export default function ServicesPage() {
             <section
               key={service.id}
               id={service.id}
-              className={`scroll-mt-32 rounded-3xl bg-[#0d1627]/60 border border-slate-800 p-8 sm:p-12 lg:p-16 flex flex-col ${
+              className={`scroll-mt-32 rounded-3xl bg-[#09101d] border border-white/[0.08] p-8 sm:p-12 lg:p-14 flex flex-col ${
                 isEven ? "lg:flex-row" : "lg:flex-row-reverse"
-              } gap-12 items-center`}
+              } gap-12 items-center hover:border-emerald-500/30 transition-all shadow-xl`}
             >
               {/* Left Column: Descriptions & Details */}
               <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-mono font-semibold">
-                  <IconComp className="w-4 h-4" />
-                  <span>Module 0{index + 1}</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#004157]/50 text-emerald-300 text-xs font-mono font-semibold border border-emerald-500/30">
+                  <IconComp className="w-4 h-4 text-emerald-400" />
+                  <span>Architecture Module 0{index + 1}</span>
                 </div>
 
                 <h2 className="text-3xl font-extrabold text-white tracking-tight">
@@ -69,8 +100,8 @@ export default function ServicesPage() {
                 </p>
 
                 <div className="space-y-3 pt-2">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Core Capabilities
+                  <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Core Capabilities & Engineering Scope:
                   </h4>
                   {service.features.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-3 text-sm text-slate-300">
@@ -85,7 +116,7 @@ export default function ServicesPage() {
                   {service.techStack.map((tech) => (
                     <span
                       key={tech}
-                      className="text-xs px-2.5 py-1 rounded-md bg-slate-800/80 text-emerald-300 font-mono border border-slate-700/60"
+                      className="text-xs px-2.5 py-1 rounded-md bg-[#004157]/30 text-emerald-300 font-mono border border-emerald-500/20"
                     >
                       {tech}
                     </span>
@@ -105,26 +136,26 @@ export default function ServicesPage() {
 
               {/* Right Column: Key Benefits Card / Visual Metric */}
               <div className="w-full lg:w-96 shrink-0">
-                <div className="rounded-2xl bg-[#09101d] border border-slate-800 p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+                <div className="rounded-2xl bg-[#004157]/20 border border-white/[0.08] p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
                   
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Zap className="w-5 h-5 text-emerald-400" />
-                    Business Returns
+                    Measurable ROI
                   </h3>
 
                   <div className="space-y-4">
                     {service.benefits.map((benefit, bIdx) => (
-                      <div key={bIdx} className="p-3.5 rounded-xl bg-[#0d1627] border border-slate-800/80">
-                        <p className="text-xs text-slate-400 font-medium">Measurable Impact #{bIdx + 1}</p>
+                      <div key={bIdx} className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <p className="text-xs text-slate-400 font-mono font-medium">Outcome Metric 0{bIdx + 1}</p>
                         <p className="text-sm font-semibold text-slate-100 mt-1">{benefit}</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-300">
-                    <p className="font-semibold">Implementation Timeline</p>
-                    <p className="text-slate-400 mt-1">Typical rollout: 2 to 6 weeks with zero business disruption guarantee.</p>
+                  <div className="p-4 rounded-xl bg-[#004157]/40 border border-emerald-500/30 text-xs text-emerald-300">
+                    <p className="font-semibold text-white">Delivery SLA</p>
+                    <p className="text-slate-300 mt-1">Typical rollout: 2 to 6 weeks with zero business disruption guarantee.</p>
                   </div>
                 </div>
               </div>
@@ -133,52 +164,31 @@ export default function ServicesPage() {
         })}
       </div>
 
-      {/* Engagement Models */}
-      <section className="mt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-white">How We Collaborate</h2>
-          <p className="text-slate-400 mt-2">Flexible engagement models tailored for your organization&apos;s stage and roadmap.</p>
+      {/* What You Receive / Standard Deliverables */}
+      <section className="mt-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="text-xs font-mono uppercase text-emerald-400 font-semibold tracking-wider">
+            Standard Operating Procedure
+          </span>
+          <h2 className="text-3xl font-bold text-white mt-2">What You Receive in Every Handover</h2>
+          <p className="text-slate-400 text-sm mt-2">
+            We don&apos;t leave you with mysterious black-box binaries. You receive full developer assets and complete operational transparency.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-8 rounded-2xl bg-[#0d1627]/50 border border-slate-800">
-            <h3 className="text-xl font-bold text-white">Fixed-Scope Project</h3>
-            <p className="text-slate-400 text-sm mt-2">
-              Ideal for building specific systems like a custom ERP module, e-commerce automation pipeline, or document extraction engine.
-            </p>
-            <ul className="mt-4 space-y-2 text-xs text-slate-300">
-              <li>• Clear milestone deliverables</li>
-              <li>• Fixed timeline & guaranteed budget</li>
-              <li>• 60-day post-launch warranty support</li>
-            </ul>
-          </div>
-
-          <div className="p-8 rounded-2xl bg-[#0d1627]/70 border border-emerald-500/40 relative shadow-xl shadow-emerald-500/10">
-            <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[11px] font-bold uppercase">
-              Most Popular
-            </div>
-            <h3 className="text-xl font-bold text-white">Dedicated Engineering Squad</h3>
-            <p className="text-slate-400 text-sm mt-2">
-              A cross-functional team of full-stack engineers, QA analysts, and automation architects integrated with your leadership.
-            </p>
-            <ul className="mt-4 space-y-2 text-xs text-slate-300">
-              <li>• Weekly agile sprints & continuous deployment</li>
-              <li>• Scale team up or down with 30-day notice</li>
-              <li>• Full source code & IP ownership transfer</li>
-            </ul>
-          </div>
-
-          <div className="p-8 rounded-2xl bg-[#0d1627]/50 border border-slate-800">
-            <h3 className="text-xl font-bold text-white">24/7 Managed IT Retainer</h3>
-            <p className="text-slate-400 text-sm mt-2">
-              Complete peace of mind for your servers, databases, security monitoring, and round-the-clock incident response.
-            </p>
-            <ul className="mt-4 space-y-2 text-xs text-slate-300">
-              <li>• 15-minute emergency SLA</li>
-              <li>• Continuous vulnerability scanning & backups</li>
-              <li>• Dedicated Slack/Teams escalation bridge</li>
-            </ul>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {deliverables.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <div key={idx} className="p-6 rounded-2xl bg-[#09101d] border border-white/[0.08] hover:border-emerald-500/30 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-[#004157]/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">{item.desc}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
