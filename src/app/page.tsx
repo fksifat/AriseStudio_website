@@ -13,6 +13,7 @@ import {
 import { servicesData, testimonialsData, engagementModels } from "@/data/companyData";
 import ArchitectureSimulator from "@/components/ArchitectureSimulator";
 import SavingsCalculator from "@/components/SavingsCalculator";
+import TechStackIcons from "@/components/TechStackIcons";
 
 export default function HomePage() {
   return (
@@ -408,16 +409,7 @@ export default function HomePage() {
           <p className="text-xs font-mono uppercase tracking-widest text-emerald-400/90 mb-8">
             Engineered on Battle-Tested Enterprise Foundations
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-slate-400 text-sm font-semibold">
-            <span className="hover:text-emerald-400 transition-colors">Next.js 16 (App Router)</span>
-            <span className="hover:text-emerald-400 transition-colors">TypeScript</span>
-            <span className="hover:text-emerald-400 transition-colors">Node.js & NestJS</span>
-            <span className="hover:text-emerald-400 transition-colors">Python & Temporal</span>
-            <span className="hover:text-emerald-400 transition-colors">PostgreSQL & TimescaleDB</span>
-            <span className="hover:text-emerald-400 transition-colors">Docker & Kubernetes</span>
-            <span className="hover:text-emerald-400 transition-colors">AWS & Cloudflare</span>
-            <span className="hover:text-emerald-400 transition-colors">Redis Mutex</span>
-          </div>
+          <TechStackIcons />
         </div>
       </section>
     </div>

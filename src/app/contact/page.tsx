@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { 
   Mail, 
   Phone, 
@@ -13,7 +14,8 @@ import {
   MessageSquare,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Calendar
 } from "lucide-react";
 
 function getInitialService(serviceParam: string, roleParam: string): string {
@@ -290,6 +292,27 @@ export default function ContactPage() {
         <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
           Share your requirements with our solutions architects. We evaluate your workflow and respond within 24 hours with an actionable roadmap.
         </p>
+
+        {/* Live Call Scheduler CTA */}
+        <div className="mt-8 max-w-xl mx-auto p-4 rounded-2xl bg-[#004157]/40 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Prefer an instant 30-min live call?</p>
+              <p className="text-xs text-slate-300">Pick an open slot on our Google Meet scheduler.</p>
+            </div>
+          </div>
+          <a
+            href={process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL || "https://calendar.app.google/MyNMsFKHdnP1fgTL6"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shrink-0 shadow-md shadow-emerald-500/20"
+          >
+            Schedule a Call
+          </a>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

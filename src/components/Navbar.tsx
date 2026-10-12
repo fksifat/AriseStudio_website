@@ -19,6 +19,9 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [expertiseDropdown, setExpertiseDropdown] = useState(false);
 
+  const scheduleHref = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL || "https://calendar.app.google/MyNMsFKHdnP1fgTL6";
+  const isExternalSchedule = scheduleHref.startsWith("http");
+
   const navLinks = [
     { name: "About", href: "/about" },
     { 
@@ -156,7 +159,8 @@ export default function Navbar() {
           {/* Enosis-Style Pill Button: "Schedule a Call" */}
           <div className="hidden lg:flex items-center">
             <Link
-              href="/contact"
+              href={scheduleHref}
+              {...(isExternalSchedule ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className="inline-flex items-center justify-center px-6 py-2 rounded-full border border-slate-400/50 hover:border-emerald-400 text-[13.5px] font-medium text-slate-100 hover:text-white bg-slate-900/30 hover:bg-emerald-500/10 transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/15"
             >
               Schedule a Call
@@ -191,7 +195,8 @@ export default function Navbar() {
           ))}
           <div className="pt-3 border-t border-slate-700/60">
             <Link
-              href="/contact"
+              href={scheduleHref}
+              {...(isExternalSchedule ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               onClick={() => setIsOpen(false)}
               className="flex items-center justify-center w-full py-2.5 rounded-full border border-slate-400/50 text-sm font-medium text-white bg-slate-800/60 hover:bg-emerald-500/20 transition-all"
             >
