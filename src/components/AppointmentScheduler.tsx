@@ -10,7 +10,6 @@ import {
   Globe,
   Loader2,
   ExternalLink,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -106,14 +105,8 @@ export default function AppointmentScheduler() {
   const calendarUrl =
     process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL ||
     "https://calendar.app.google/KKL4cx7gWejtrZtj9";
-  const googleEmbedUrl =
-    process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL ||
-    "https://calendar.google.com/calendar/appointments/schedules/AcZssZ244HcB-cfSw_zVmdDe6x1ILxlP_JLme5txmE7qc5lQzQOAXdvkioFYDi3XkS3tCEAXqpYTZ7oX?gv=true";
 
   const isClient = useIsClient();
-  const [viewMode, setViewMode] = useState<"google" | "custom">("google");
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-
   const currentDate = useMemo(() => (isClient ? new Date() : null), [isClient]);
   const [scheduleRefDate, setScheduleRefDate] = useState<Date | null>(null);
   const [viewMonthState, setViewMonthState] = useState<number | null>(null);
@@ -400,12 +393,12 @@ export default function AppointmentScheduler() {
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-3 sm:p-5 relative">
+    <div className="w-full max-w-5xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 relative">
       {/* Sleek Integrated Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-white/[0.06]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
         {/* Host Info */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#004157] to-[#0a814f] border border-emerald-400/50 flex items-center justify-center text-xs font-mono font-bold text-emerald-300 shrink-0 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#004157] to-[#0a814f] border border-emerald-400/50 flex items-center justify-center text-xs font-mono font-bold text-emerald-300 shrink-0 shadow-sm">
             FS
           </div>
           <div className="leading-tight">
@@ -414,7 +407,7 @@ export default function AppointmentScheduler() {
               <span className="w-1 h-1 rounded-full bg-emerald-400" />
               <span className="text-[11px] font-mono text-emerald-400 font-normal">Principal Architect</span>
             </div>
-            <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
+            <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono mt-0.5">
               <Clock className="w-3 h-3 text-emerald-400/80" />
               <span>30 min</span>
               <span>•</span>
@@ -424,100 +417,49 @@ export default function AppointmentScheduler() {
           </div>
         </div>
 
-        {/* View Switcher & Action */}
+        {/* Timezone Selector & Open/Extend Calendar Button */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          {/* Tab Pill */}
-          <div className="inline-flex p-0.5 rounded-lg bg-slate-900/90 border border-white/[0.08]">
-            <button
-              type="button"
-              onClick={() => setViewMode("google")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === "google"
-                  ? "bg-emerald-400 text-slate-950 font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-white"
-              }`}
+          <div className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-white/[0.08] text-xs font-mono text-slate-300">
+            <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <select
+              value={selectedTimezone}
+              onChange={(e) => setSelectedTimezone(e.target.value)}
+              className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-1 text-xs"
             >
-              <CalendarIcon className="w-3 h-3" />
-              <span>Google Calendar</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("custom")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === "custom"
-                  ? "bg-emerald-400 text-slate-950 font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>Studio Matrix</span>
-            </button>
+              {timezones.map((tz) => (
+                <option
+                  key={tz}
+                  value={tz}
+                  className="bg-[#09101d] text-slate-200"
+                >
+                  {tz}
+                </option>
+              ))}
+            </select>
           </div>
 
           <a
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg bg-slate-900/90 border border-white/[0.08] hover:border-emerald-400/50 text-slate-400 hover:text-white transition-colors"
-            title="Open in external Google Calendar tab"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/20 text-xs font-medium text-emerald-300 hover:text-white transition-all shadow-sm"
+            title="Open full Google Calendar in new tab"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="font-mono hidden sm:inline">Open Calendar</span>
+            <ExternalLink className="w-3 h-3 text-emerald-400/80" />
           </a>
         </div>
       </div>
 
-      {viewMode === "google" ? (
-        /* Embedded Google Calendar Appointment Schedule (Direct on-site) */
-        <div className="relative w-full rounded-2xl overflow-hidden bg-white border border-slate-700/50 shadow-inner">
-          {!iframeLoaded && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-300 gap-2 z-10 min-h-[480px]">
-              <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
-              <span className="text-xs font-mono text-emerald-400">
-                Loading Google Calendar...
-              </span>
-            </div>
-          )}
-          <iframe
-            src={googleEmbedUrl}
-            onLoad={() => setIframeLoaded(true)}
-            className="w-full h-[620px] sm:h-[680px] border-0 bg-white"
-            title="30 minutes with AriseStudio - Google Calendar Appointment Schedule"
-            allow="camera; microphone; fullscreen; clipboard-write"
-          />
+      {!isClient || !currentDate || scheduleDays.length === 0 ? (
+        <div className="w-full rounded-2xl bg-slate-900/30 border border-white/[0.06] p-12 text-center flex items-center justify-center gap-2 text-slate-400">
+          <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+          <span className="text-sm font-mono">
+            Loading available appointment dates...
+          </span>
         </div>
-      ) : (
-        /* Custom Studio Matrix */
-        <div>
-          {/* Timezone Selector for Studio Matrix */}
-          <div className="mb-4 flex items-center justify-end">
-            <div className="flex items-center gap-2 bg-[#09101d] px-3.5 py-2 rounded-xl border border-white/[0.08] text-xs font-mono text-slate-300">
-              <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <select
-                value={selectedTimezone}
-                onChange={(e) => setSelectedTimezone(e.target.value)}
-                className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-2"
-              >
-                {timezones.map((tz) => (
-                  <option
-                    key={tz}
-                    value={tz}
-                    className="bg-[#09101d] text-slate-200"
-                  >
-                    {tz}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {!isClient || !currentDate || scheduleDays.length === 0 ? (
-            <div className="w-full rounded-3xl bg-[#09101d] border border-white/[0.08] p-12 text-center flex items-center justify-center gap-2 text-slate-400">
-              <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-              <span className="text-sm font-mono">
-                Loading available appointment dates...
-              </span>
-            </div>
-          ) : status === "confirmed" && confirmedBooking ? (
+      ) : status === "confirmed" && confirmedBooking ? (
         /* Confirmed Success Card */
         <div className="rounded-3xl bg-[#09101d] border border-emerald-500/40 p-8 sm:p-12 text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-6 shadow-lg shadow-emerald-500/10">
@@ -881,8 +823,6 @@ export default function AppointmentScheduler() {
           </div>
         </div>
       )}
-    </div>
-  )}
 
       {/* Confirmation Slide-In Modal / Panel */}
       {isBookingOpen && status !== "confirmed" && (
