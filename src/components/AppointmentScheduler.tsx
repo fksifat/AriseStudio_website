@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   Clock,
   Video,
@@ -21,65 +21,13 @@ interface DaySchedule {
 }
 
 const defaultSlotsByWeekday: Record<number, string[]> = {
-  0: [], // Sunday: Studio Closed
-  1: [
-    "7:30pm",
-    "8:00pm",
-    "8:30pm",
-    "9:00pm",
-    "9:30pm",
-    "10:00pm",
-    "10:30pm",
-    "11:00pm",
-    "11:30pm",
-  ],
-  2: [
-    "10:30am",
-    "11:00am",
-    "2:00pm",
-    "2:30pm",
-    "3:30pm",
-    "4:30pm",
-    "5:00pm",
-    "7:00pm",
-    "7:30pm",
-    "8:30pm",
-  ],
-  3: [
-    "10:00am",
-    "11:30am",
-    "1:30pm",
-    "2:30pm",
-    "3:00pm",
-    "4:00pm",
-    "5:30pm",
-    "7:00pm",
-    "7:30pm",
-    "9:00pm",
-  ],
-  4: [
-    "11:00am",
-    "1:00pm",
-    "2:00pm",
-    "3:00pm",
-    "4:30pm",
-    "5:00pm",
-    "7:00pm",
-    "8:00pm",
-    "9:30pm",
-  ],
-  5: [
-    "10:30am",
-    "11:30am",
-    "2:30pm",
-    "3:30pm",
-    "4:00pm",
-    "5:00pm",
-    "7:00pm",
-    "7:30pm",
-    "8:30pm",
-  ],
-  6: ["11:00am", "1:00pm", "2:30pm", "3:30pm", "4:30pm", "5:00pm", "5:30pm"],
+  0: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Sunday
+  1: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Monday
+  2: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Tuesday
+  3: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Wednesday
+  4: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Thursday
+  5: [], // Friday: Studio Closed / Maintenance
+  6: ["11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Saturday (9:00am removed)
 };
 
 const dayShortNames = ["SUN", "M", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -177,6 +125,31 @@ export default function AppointmentScheduler() {
   const [selectedTimezone, setSelectedTimezone] = useState<string>(
     timezones[0],
   );
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadBookedSlots() {
+      try {
+        const res = await fetch("/api/schedule");
+        const data = await res.json();
+        if (isMounted && data.success && Array.isArray(data.bookedSlots)) {
+          setBookedSlots(data.bookedSlots);
+        }
+      } catch {
+        // silently fallback
+      }
+    }
+    loadBookedSlots();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const isSlotBooked = (dayFullDate: string, slotTime: string) => {
+    const key = `${dayFullDate.trim()}_${slotTime.trim()}`.toLowerCase();
+    return bookedSlots.some((s) => s.trim().toLowerCase() === key);
+  };
 
   // Form State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -202,6 +175,8 @@ export default function AppointmentScheduler() {
   const activeDay = scheduleDays[selectedDayIndex] || scheduleDays[0];
 
   const handleSlotSelect = (dayIdx: number, slot: string) => {
+    const targetDay = scheduleDays[dayIdx];
+    if (!targetDay || isSlotBooked(targetDay.fullDate, slot)) return;
     setSelectedDayIndex(dayIdx);
     setSelectedSlot(slot);
     setIsBookingOpen(true);
@@ -210,7 +185,7 @@ export default function AppointmentScheduler() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSlot || !activeDay) return;
+    if (!selectedSlot || !activeDay || isSlotBooked(activeDay.fullDate, selectedSlot)) return;
 
     setStatus("loading");
     setErrorMessage("");
@@ -243,6 +218,11 @@ export default function AppointmentScheduler() {
         timezone: selectedTimezone,
         meetUrl: data.booking.googleMeetUrl,
       });
+      // Append booked slot so it is immediately rendered as disabled
+      setBookedSlots((prev) => [
+        ...prev,
+        `${activeDay.fullDate.trim()}_${selectedSlot.trim()}`,
+      ]);
       setStatus("confirmed");
     } catch (err) {
       setStatus("error");
@@ -594,7 +574,13 @@ export default function AppointmentScheduler() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
-                  <span>Sundays reserved for maintenance</span>
+                  <span>Fridays reserved for maintenance</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                    <span className="w-2 h-[1px] bg-slate-400 transform -rotate-45" />
+                  </span>
+                  <span>Crossed-out slots are already booked</span>
                 </div>
               </div>
             </div>
@@ -635,17 +621,27 @@ export default function AppointmentScheduler() {
                     <div key={day.dateNumber} className="space-y-2">
                       {day.slots.length > 0 ? (
                         day.slots.map((slot) => {
+                          const isBooked = isSlotBooked(day.fullDate, slot);
                           const isPicked =
                             selectedDayIndex === dIdx && selectedSlot === slot;
                           return (
                             <button
                               key={slot}
-                              onClick={() => handleSlotSelect(dIdx, slot)}
+                              type="button"
+                              disabled={isBooked}
+                              onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
                               className={`w-full py-2 px-1 text-center rounded-full text-xs font-mono font-medium transition-all duration-150 border ${
-                                isPicked
-                                  ? "bg-emerald-400 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/30"
-                                  : "bg-slate-900/90 text-slate-200 border-slate-800 hover:border-emerald-500/50 hover:bg-[#004157]/40 hover:text-white"
+                                isBooked
+                                  ? "bg-slate-950/60 text-slate-500/70 border-slate-800/40 cursor-not-allowed line-through opacity-50 select-none hover:border-slate-800/40 hover:bg-slate-950/60"
+                                  : isPicked
+                                    ? "bg-emerald-400 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/30 cursor-pointer"
+                                    : "bg-slate-900/90 text-slate-200 border-slate-800 hover:border-emerald-500/50 hover:bg-[#004157]/40 hover:text-white cursor-pointer"
                               }`}
+                              title={
+                                isBooked
+                                  ? `${slot} (Booked - Not Available)`
+                                  : `Select ${slot}`
+                              }
                             >
                               {slot}
                             </button>

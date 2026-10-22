@@ -66,6 +66,33 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if slot has already been reserved
+    try {
+      const existingFilePath = path.join(process.cwd(), "data", "bookings.jsonl");
+      const existingContent = await fs.readFile(existingFilePath, "utf8");
+      const existingLines = existingContent.trim().split("\n").filter(Boolean);
+      const isAlreadyBooked = existingLines.some((line) => {
+        try {
+          const entry = JSON.parse(line);
+          return (
+            entry.date?.trim().toLowerCase() === String(date).trim().toLowerCase() &&
+            entry.timeSlot?.trim().toLowerCase() === String(timeSlot).trim().toLowerCase()
+          );
+        } catch {
+          return false;
+        }
+      });
+
+      if (isAlreadyBooked) {
+        return NextResponse.json(
+          { success: false, error: "This appointment slot is already reserved. Please choose an open slot." },
+          { status: 409 }
+        );
+      }
+    } catch {
+      // file might not exist yet, continue
+    }
+
     // Rate limiting: prevent IP flooding and email bombing
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anonymous";
 
@@ -196,6 +223,28 @@ export async function POST(req: Request) {
       { success: false, error: "Failed to schedule appointment. Please try again." },
       { status: 500 }
     );
+  }
+}
+
+export async function GET() {
+  try {
+    const filePath = path.join(process.cwd(), "data", "bookings.jsonl");
+    const content = await fs.readFile(filePath, "utf8");
+    const lines = content.trim().split("\n").filter(Boolean);
+    const bookedSlots: string[] = [];
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed.date && parsed.timeSlot) {
+          bookedSlots.push(`${parsed.date}_${parsed.timeSlot}`);
+        }
+      } catch {
+        // ignore malformed line
+      }
+    }
+    return NextResponse.json({ success: true, bookedSlots });
+  } catch {
+    return NextResponse.json({ success: true, bookedSlots: [] });
   }
 }
 
