@@ -201,7 +201,7 @@ export default function AboutPage() {
       </div>
 
       {/* CTA Box */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="rounded-3xl bg-gradient-to-r from-[#004157]/40 via-[#09101d] to-[#0a814f]/30 border border-emerald-500/30 p-10 sm:p-14 shadow-2xl">
           <h2 className="text-3xl font-bold text-white">Let&apos;s Review Your Technical Roadmap</h2>
           <p className="text-slate-300 mt-3 max-w-xl mx-auto text-sm sm:text-base">

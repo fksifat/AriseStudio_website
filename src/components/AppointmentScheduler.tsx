@@ -393,7 +393,7 @@ export default function AppointmentScheduler() {
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
-    <div className="w-full max-w-6xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-5 sm:p-7 relative">
+    <div className="w-full max-w-7xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-5 sm:p-7 relative">
       {/* Sleek Integrated Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
         {/* Host Info */}
