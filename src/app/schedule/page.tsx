@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
-import { Sparkles, ShieldCheck, Zap, Clock, Calendar as CalendarIcon, Video, ExternalLink } from "lucide-react";
+import { Sparkles, ShieldCheck, Zap, Clock, Calendar as CalendarIcon, Video, ExternalLink, Loader2 } from "lucide-react";
 import AppointmentScheduler from "@/components/AppointmentScheduler";
 
 export const metadata: Metadata = {
@@ -56,11 +57,13 @@ export default function SchedulePage() {
               <div>
                 <p className="text-sm font-bold text-white flex items-center gap-2">
                   Official Google Calendar Appointment
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Live Sync</span>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Embedded Below
+                  </span>
                 </p>
                 <p className="text-xs text-slate-300 flex items-center gap-1.5 mt-0.5">
                   <Video className="w-3.5 h-3.5 text-sky-400 inline shrink-0" />
-                  <span>Google Meet video link is generated automatically upon booking</span>
+                  <span>Choose any open slot directly below without leaving this website · Google Meet auto-generated</span>
                 </p>
               </div>
             </div>
@@ -70,9 +73,9 @@ export default function SchedulePage() {
                 href={calendarUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-md shadow-emerald-500/20"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-emerald-300 hover:text-white bg-slate-800/80 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-sm"
               >
-                <span>Book on Google Calendar</span>
+                <span>Open in Full Tab</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
               {meetUrl && (
@@ -80,7 +83,7 @@ export default function SchedulePage() {
                   href={meetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-medium text-slate-200 hover:text-white bg-slate-800/80 hover:bg-sky-500/20 border border-slate-700/80 hover:border-sky-400 transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium text-slate-200 hover:text-white bg-slate-800/80 hover:bg-sky-500/20 border border-slate-700/80 hover:border-sky-400 transition-all"
                   title="Direct Google Meet Room"
                 >
                   <Video className="w-3.5 h-3.5 text-sky-400" />
@@ -92,7 +95,16 @@ export default function SchedulePage() {
         </div>
 
         {/* Appointment Scheduler Widget */}
-        <AppointmentScheduler />
+        <Suspense
+          fallback={
+            <div className="w-full max-w-6xl mx-auto p-12 text-center flex items-center justify-center gap-2 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+              <span className="text-sm font-mono">Loading appointment scheduler...</span>
+            </div>
+          }
+        >
+          <AppointmentScheduler />
+        </Suspense>
       </div>
     </div>
   );
