@@ -1,78 +1,137 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  Clock, 
-  Video, 
-  ChevronLeft, 
-  ChevronRight, 
-  CheckCircle2, 
-  Calendar as CalendarIcon, 
-  ArrowRight, 
-  Globe, 
+import { useState, useMemo, useSyncExternalStore } from "react";
+import {
+  Clock,
+  Video,
+  CheckCircle2,
+  Calendar as CalendarIcon,
+  ArrowRight,
+  Globe,
   Loader2,
-  ExternalLink
+  ExternalLink,
 } from "lucide-react";
 
 interface DaySchedule {
   dayName: string;
   dayShort: string;
   dateNumber: number;
-  fullDate: string; // "Monday, Oct 12, 2026"
+  fullDate: string;
   slots: string[];
 }
 
-const scheduleDays: DaySchedule[] = [
-  {
-    dayName: "Monday",
-    dayShort: "M",
-    dateNumber: 12,
-    fullDate: "Monday, October 12, 2026",
-    slots: ["7:30pm", "8:00pm", "8:30pm", "9:00pm", "9:30pm", "10:00pm", "10:30pm", "11:00pm", "11:30pm"]
-  },
-  {
-    dayName: "Tuesday",
-    dayShort: "TUE",
-    dateNumber: 13,
-    fullDate: "Tuesday, October 13, 2026",
-    slots: ["10:30am", "11:00am", "2:00pm", "2:30pm", "3:30pm", "4:30pm", "5:00pm", "7:00pm", "7:30pm", "8:30pm"]
-  },
-  {
-    dayName: "Wednesday",
-    dayShort: "WED",
-    dateNumber: 14,
-    fullDate: "Wednesday, October 14, 2026",
-    slots: ["10:00am", "11:30am", "1:30pm", "2:30pm", "3:00pm", "4:00pm", "5:30pm", "7:00pm", "7:30pm", "9:00pm"]
-  },
-  {
-    dayName: "Thursday",
-    dayShort: "THU",
-    dateNumber: 15,
-    fullDate: "Thursday, October 15, 2026",
-    slots: ["11:00am", "1:00pm", "2:00pm", "3:00pm", "4:30pm", "5:00pm", "7:00pm", "8:00pm", "9:30pm"]
-  },
-  {
-    dayName: "Friday",
-    dayShort: "FRI",
-    dateNumber: 16,
-    fullDate: "Friday, October 16, 2026",
-    slots: ["10:30am", "11:30am", "2:30pm", "3:30pm", "4:00pm", "5:00pm", "7:00pm", "7:30pm", "8:30pm"]
-  },
-  {
-    dayName: "Saturday",
-    dayShort: "SAT",
-    dateNumber: 17,
-    fullDate: "Saturday, October 17, 2026",
-    slots: ["11:00am", "1:00pm", "2:30pm", "3:30pm", "4:30pm", "5:00pm", "5:30pm"]
-  },
-  {
-    dayName: "Sunday",
-    dayShort: "SUN",
-    dateNumber: 18,
-    fullDate: "Sunday, October 18, 2026",
-    slots: [] // Studio Closed
-  }
+const defaultSlotsByWeekday: Record<number, string[]> = {
+  0: [], // Sunday: Studio Closed
+  1: [
+    "7:30pm",
+    "8:00pm",
+    "8:30pm",
+    "9:00pm",
+    "9:30pm",
+    "10:00pm",
+    "10:30pm",
+    "11:00pm",
+    "11:30pm",
+  ],
+  2: [
+    "10:30am",
+    "11:00am",
+    "2:00pm",
+    "2:30pm",
+    "3:30pm",
+    "4:30pm",
+    "5:00pm",
+    "7:00pm",
+    "7:30pm",
+    "8:30pm",
+  ],
+  3: [
+    "10:00am",
+    "11:30am",
+    "1:30pm",
+    "2:30pm",
+    "3:00pm",
+    "4:00pm",
+    "5:30pm",
+    "7:00pm",
+    "7:30pm",
+    "9:00pm",
+  ],
+  4: [
+    "11:00am",
+    "1:00pm",
+    "2:00pm",
+    "3:00pm",
+    "4:30pm",
+    "5:00pm",
+    "7:00pm",
+    "8:00pm",
+    "9:30pm",
+  ],
+  5: [
+    "10:30am",
+    "11:30am",
+    "2:30pm",
+    "3:30pm",
+    "4:00pm",
+    "5:00pm",
+    "7:00pm",
+    "7:30pm",
+    "8:30pm",
+  ],
+  6: ["11:00am", "1:00pm", "2:30pm", "3:30pm", "4:30pm", "5:00pm", "5:30pm"],
+};
+
+const dayShortNames = ["SUN", "M", "TUE", "WED", "THU", "FRI", "SAT"];
+const dayFullNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function generateRollingSchedule(
+  daysCount: number = 7,
+  refDate: Date = new Date(),
+): DaySchedule[] {
+  const days: DaySchedule[] = [];
+  for (let i = 0; i < daysCount; i++) {
+    const d = new Date(refDate);
+    d.setDate(refDate.getDate() + i);
+    const dayOfWeek = d.getDay();
+    const dayName = dayFullNames[dayOfWeek];
+    const dayShort = dayShortNames[dayOfWeek];
+    const dateNumber = d.getDate();
+    const month = monthNames[d.getMonth()];
+    const year = d.getFullYear();
+    const fullDate = `${dayName}, ${month} ${dateNumber}, ${year}`;
+    days.push({
+      dayName,
+      dayShort,
+      dateNumber,
+      fullDate,
+      slots: defaultSlotsByWeekday[dayOfWeek] || [],
+    });
+  }
+  return days;
+}
 
 const timezones = [
   "Bangladesh Time (BST / UTC+6)",
@@ -81,20 +140,49 @@ const timezones = [
   "GMT / London (UTC+0)",
   "Central European Time (UTC+1)",
   "Dubai / Gulf Time (UTC+4)",
-  "Singapore / SGT (UTC+8)"
+  "Singapore / SGT (UTC+8)",
 ];
 
+let cachedClientDate: Date | null = null;
+const emptySubscribe = () => () => {};
+
+function getClientDate(): Date {
+  if (!cachedClientDate) {
+    cachedClientDate = new Date();
+  }
+  return cachedClientDate;
+}
+
+function getServerDate(): null {
+  return null;
+}
+
 export default function AppointmentScheduler() {
-  const calendarUrl = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL || "https://calendar.app.google/MyNMsFKHdnP1fgTL6";
+  const calendarUrl =
+    process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL ||
+    "https://calendar.app.google/MyNMsFKHdnP1fgTL6";
   const meetUrl = process.env.NEXT_PUBLIC_GOOGLE_MEET_URL || "";
 
+  const currentDate = useSyncExternalStore(
+    emptySubscribe,
+    getClientDate,
+    getServerDate,
+  );
+  const scheduleDays = useMemo(
+    () => (currentDate ? generateRollingSchedule(7, currentDate) : []),
+    [currentDate],
+  );
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedTimezone, setSelectedTimezone] = useState<string>(timezones[0]);
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(
+    timezones[0],
+  );
 
   // Form State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "confirmed" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "confirmed" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [confirmedBooking, setConfirmedBooking] = useState<{
     date: string;
@@ -108,10 +196,10 @@ export default function AppointmentScheduler() {
     email: "",
     company: "",
     service: "E-Commerce Automation Systems",
-    notes: ""
+    notes: "",
   });
 
-  const activeDay = scheduleDays[selectedDayIndex];
+  const activeDay = scheduleDays[selectedDayIndex] || scheduleDays[0];
 
   const handleSlotSelect = (dayIdx: number, slot: string) => {
     setSelectedDayIndex(dayIdx);
@@ -122,7 +210,7 @@ export default function AppointmentScheduler() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSlot) return;
+    if (!selectedSlot || !activeDay) return;
 
     setStatus("loading");
     setErrorMessage("");
@@ -139,8 +227,8 @@ export default function AppointmentScheduler() {
           timeSlot: selectedSlot,
           timezone: selectedTimezone,
           service: formData.service,
-          notes: formData.notes
-        })
+          notes: formData.notes,
+        }),
       });
 
       const data = await res.json();
@@ -153,24 +241,78 @@ export default function AppointmentScheduler() {
         date: activeDay.fullDate,
         timeSlot: selectedSlot,
         timezone: selectedTimezone,
-        meetUrl: data.booking.googleMeetUrl
+        meetUrl: data.booking.googleMeetUrl,
       });
       setStatus("confirmed");
     } catch (err) {
       setStatus("error");
-      setErrorMessage(err instanceof Error ? err.message : "Network error. Please try again.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Network error. Please try again.",
+      );
     }
   };
 
   const generateGoogleCalendarUrl = () => {
     if (!confirmedBooking) return "#";
-    const title = encodeURIComponent("30 minutes with AriseStudio Architecture Team");
-    const details = encodeURIComponent(
-      `Technical Discovery Call with AriseStudio.\nTopic: ${formData.service}\nAttendee: ${formData.name} (${formData.company})${confirmedBooking.meetUrl ? `\nGoogle Meet: ${confirmedBooking.meetUrl}` : ""}`
+    const title = encodeURIComponent(
+      "30 minutes with AriseStudio Architecture Team",
     );
-    const location = encodeURIComponent(confirmedBooking.meetUrl || "Google Meet (Link in confirmation email)");
+    const details = encodeURIComponent(
+      `Technical Discovery Call with AriseStudio.\nTopic: ${formData.service}\nAttendee: ${formData.name} (${formData.company})${confirmedBooking.meetUrl ? `\nGoogle Meet: ${confirmedBooking.meetUrl}` : ""}`,
+    );
+    const location = encodeURIComponent(
+      confirmedBooking.meetUrl || "Google Meet (Link in confirmation email)",
+    );
+
+    try {
+      const match = confirmedBooking.timeSlot.match(/(\d+):(\d+)(am|pm)/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const mins = parseInt(match[2], 10);
+        const isPM = match[3].toLowerCase() === "pm";
+        if (isPM && hours < 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+
+        const d = new Date(confirmedBooking.date);
+        const tzMatch = confirmedBooking.timezone.match(/UTC([+-]\d+)/i);
+        let utcTimestamp: number;
+        if (tzMatch) {
+          const offsetHours = parseInt(tzMatch[1], 10);
+          utcTimestamp = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), hours - offsetHours, mins);
+        } else {
+          d.setHours(hours, mins, 0, 0);
+          utcTimestamp = d.getTime();
+        }
+
+        const formatGCal = (dt: Date) =>
+          dt
+            .toISOString()
+            .replace(/[-:]/g, "")
+            .replace(/\.\d{3}/, "");
+        const dates = `${formatGCal(new Date(utcTimestamp))}/${formatGCal(new Date(utcTimestamp + 30 * 60 * 1000))}`;
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+      }
+    } catch {
+      // fallback if parsing fails
+    }
+
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
   };
+
+  if (!currentDate || scheduleDays.length === 0) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-12 text-center flex items-center justify-center gap-2 text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+        <span className="text-sm font-mono">
+          Loading available appointment dates...
+        </span>
+      </div>
+    );
+  }
+
+  const currentMonthIdx = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  const monthHeader = `${monthNames[currentMonthIdx]} ${currentYear}`;
 
   return (
     <div className="w-full max-w-6xl mx-auto">
@@ -210,7 +352,11 @@ export default function AppointmentScheduler() {
               className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-2"
             >
               {timezones.map((tz) => (
-                <option key={tz} value={tz} className="bg-[#09101d] text-slate-200">
+                <option
+                  key={tz}
+                  value={tz}
+                  className="bg-[#09101d] text-slate-200"
+                >
                   {tz}
                 </option>
               ))}
@@ -261,22 +407,29 @@ export default function AppointmentScheduler() {
           </h3>
 
           <p className="text-slate-300 text-sm max-w-lg mx-auto mt-2 leading-relaxed">
-            We have reserved your slot with an AriseStudio Principal Systems Architect. A calendar invitation has been dispatched to <strong>{formData.email}</strong>.
+            We have reserved your slot with an AriseStudio Principal Systems
+            Architect. A calendar invitation has been dispatched to{" "}
+            <strong>{formData.email}</strong>.
           </p>
 
           <div className="my-8 max-w-md mx-auto p-5 rounded-2xl bg-[#004157]/30 border border-white/[0.08] text-left space-y-3 font-mono text-xs">
             <div className="flex justify-between items-center pb-2 border-b border-slate-800">
               <span className="text-slate-400">Date:</span>
-              <span className="text-white font-bold">{confirmedBooking.date}</span>
+              <span className="text-white font-bold">
+                {confirmedBooking.date}
+              </span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-slate-800">
               <span className="text-slate-400">Time:</span>
-              <span className="text-emerald-400 font-bold">{confirmedBooking.timeSlot} ({confirmedBooking.timezone.split(" ")[0]})</span>
+              <span className="text-emerald-400 font-bold">
+                {confirmedBooking.timeSlot} (
+                {confirmedBooking.timezone.split(" ")[0]})
+              </span>
             </div>
             {confirmedBooking.meetUrl ? (
               <div className="flex flex-col gap-1.5 pt-1">
                 <span className="text-slate-400">Google Meet Link:</span>
-                <a 
+                <a
                   href={confirmedBooking.meetUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -326,7 +479,7 @@ export default function AppointmentScheduler() {
               Select an appointment time
             </h3>
             <span className="text-xs font-mono text-slate-400">
-              October 2026
+              {monthHeader}
             </span>
           </div>
 
@@ -334,22 +487,12 @@ export default function AppointmentScheduler() {
             {/* Left Mini Calendar Widget */}
             <div className="lg:col-span-4 p-5 rounded-2xl bg-slate-900/60 border border-white/[0.06] space-y-4">
               <div className="flex items-center justify-between pb-2">
-                <span className="text-sm font-bold text-white font-mono">October 2026</span>
-                <div className="flex items-center gap-1">
-                  <button 
-                    disabled 
-                    className="p-1.5 rounded-lg text-slate-600 cursor-not-allowed" 
-                    aria-label="Previous month"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button 
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                    aria-label="Next month"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <span className="text-sm font-bold text-white font-mono">
+                  {monthHeader}
+                </span>
+                <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  Rolling 7 Days
+                </span>
               </div>
 
               {/* Day Initials */}
@@ -365,53 +508,83 @@ export default function AppointmentScheduler() {
 
               {/* Calendar Days Matrix */}
               <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-mono">
-                {/* Preceding blanks */}
-                <span className="p-2 text-slate-700">28</span>
-                <span className="p-2 text-slate-700">29</span>
-                <span className="p-2 text-slate-700">30</span>
-                <span className="p-2 text-slate-500">1</span>
-                <span className="p-2 text-slate-500">2</span>
-                <span className="p-2 text-slate-500">3</span>
-                <span className="p-2 text-slate-500">4</span>
+                {/* Preceding days from previous month */}
+                {Array.from(
+                  {
+                    length: new Date(currentYear, currentMonthIdx, 1).getDay(),
+                  },
+                  (_, i) => {
+                    const prevMonthDays = new Date(
+                      currentYear,
+                      currentMonthIdx,
+                      0,
+                    ).getDate();
+                    const firstDay = new Date(
+                      currentYear,
+                      currentMonthIdx,
+                      1,
+                    ).getDay();
+                    const dayNum = prevMonthDays - firstDay + 1 + i;
+                    return (
+                      <span key={`prev-${i}`} className="p-2 text-slate-700">
+                        {dayNum}
+                      </span>
+                    );
+                  },
+                )}
 
-                <span className="p-2 text-slate-500">5</span>
-                <span className="p-2 text-slate-500">6</span>
-                <span className="p-2 text-slate-500">7</span>
-                <span className="p-2 text-slate-500">8</span>
-                <span className="p-2 text-slate-500">9</span>
-                <span className="p-2 text-slate-500">10</span>
-                <span className="p-2 text-slate-500">11</span>
+                {/* Current month days */}
+                {Array.from(
+                  {
+                    length: new Date(
+                      currentYear,
+                      currentMonthIdx + 1,
+                      0,
+                    ).getDate(),
+                  },
+                  (_, i) => {
+                    const dayNum = i + 1;
+                    const schedIdx = scheduleDays.findIndex(
+                      (sd) =>
+                        sd.dateNumber === dayNum &&
+                        sd.fullDate.includes(monthNames[currentMonthIdx]),
+                    );
+                    const isSchedDay = schedIdx !== -1;
+                    const isSelected =
+                      isSchedDay && selectedDayIndex === schedIdx;
+                    const hasSlots =
+                      isSchedDay && scheduleDays[schedIdx].slots.length > 0;
+                    const isPast = dayNum < currentDate.getDate();
 
-                {/* Current Active Week (12 to 18) */}
-                {scheduleDays.map((d, idx) => {
-                  const isSelected = selectedDayIndex === idx;
-                  const hasSlots = d.slots.length > 0;
-                  return (
-                    <button
-                      key={d.dateNumber}
-                      onClick={() => setSelectedDayIndex(idx)}
-                      disabled={!hasSlots}
-                      className={`p-2 rounded-full font-bold transition-all ${
-                        isSelected
-                          ? "bg-emerald-500 text-slate-950 ring-2 ring-emerald-400 shadow-md"
-                          : hasSlots
-                          ? "bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
-                          : "text-slate-600 cursor-not-allowed"
-                      }`}
-                    >
-                      {d.dateNumber}
-                    </button>
-                  );
-                })}
+                    if (isSchedDay) {
+                      return (
+                        <button
+                          key={dayNum}
+                          onClick={() => setSelectedDayIndex(schedIdx)}
+                          disabled={!hasSlots}
+                          className={`p-2 rounded-full font-bold transition-all ${
+                            isSelected
+                              ? "bg-emerald-500 text-slate-950 ring-2 ring-emerald-400 shadow-md"
+                              : hasSlots
+                                ? "bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
+                                : "text-slate-600 cursor-not-allowed"
+                          }`}
+                        >
+                          {dayNum}
+                        </button>
+                      );
+                    }
 
-                {/* Following available days */}
-                <button onClick={() => setSelectedDayIndex(0)} className="p-2 rounded-full bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20">19</button>
-                <button onClick={() => setSelectedDayIndex(1)} className="p-2 rounded-full bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20">20</button>
-                <button onClick={() => setSelectedDayIndex(2)} className="p-2 rounded-full bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20">21</button>
-                <button onClick={() => setSelectedDayIndex(3)} className="p-2 rounded-full bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20">22</button>
-                <span className="p-2 text-slate-500">23</span>
-                <span className="p-2 text-slate-500">24</span>
-                <span className="p-2 text-slate-500">25</span>
+                    return (
+                      <span
+                        key={dayNum}
+                        className={`p-2 ${isPast ? "text-slate-700" : "text-slate-500"}`}
+                      >
+                        {dayNum}
+                      </span>
+                    );
+                  },
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
@@ -434,7 +607,10 @@ export default function AppointmentScheduler() {
                   {scheduleDays.map((day, idx) => {
                     const isSelected = selectedDayIndex === idx;
                     return (
-                      <div key={day.dateNumber} className="flex flex-col items-center">
+                      <div
+                        key={day.dateNumber}
+                        className="flex flex-col items-center"
+                      >
                         <span className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">
                           {day.dayShort}
                         </span>
@@ -459,7 +635,8 @@ export default function AppointmentScheduler() {
                     <div key={day.dateNumber} className="space-y-2">
                       {day.slots.length > 0 ? (
                         day.slots.map((slot) => {
-                          const isPicked = selectedDayIndex === dIdx && selectedSlot === slot;
+                          const isPicked =
+                            selectedDayIndex === dIdx && selectedSlot === slot;
                           return (
                             <button
                               key={slot}
@@ -527,7 +704,9 @@ export default function AppointmentScheduler() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="e.g. Mahir Zaman"
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
                 />
@@ -541,7 +720,9 @@ export default function AppointmentScheduler() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   placeholder="mahir@company.com"
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
                 />
@@ -555,7 +736,9 @@ export default function AppointmentScheduler() {
                   <input
                     type="text"
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, company: e.target.value })
+                    }
                     placeholder="e.g. Apex Commerce"
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
                   />
@@ -567,14 +750,26 @@ export default function AppointmentScheduler() {
                   </label>
                   <select
                     value={formData.service}
-                    onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, service: e.target.value })
+                    }
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none cursor-pointer"
                   >
-                    <option value="E-Commerce Automation Systems">E-Commerce Automation</option>
-                    <option value="Custom ERP & CRM Engineering">Custom ERP & CRM</option>
-                    <option value="Business Process Automation & RPA">Business Process RPA</option>
-                    <option value="24/7 Managed IT Support & DevOps">24/7 Managed IT Support</option>
-                    <option value="General Architecture Audit">General Architecture</option>
+                    <option value="E-Commerce Automation Systems">
+                      E-Commerce Automation
+                    </option>
+                    <option value="Custom ERP & CRM Engineering">
+                      Custom ERP & CRM
+                    </option>
+                    <option value="Business Process Automation & RPA">
+                      Business Process RPA
+                    </option>
+                    <option value="24/7 Managed IT Support & DevOps">
+                      24/7 Managed IT Support
+                    </option>
+                    <option value="General Architecture Audit">
+                      General Architecture
+                    </option>
                   </select>
                 </div>
               </div>
@@ -586,7 +781,9 @@ export default function AppointmentScheduler() {
                 <textarea
                   rows={2}
                   value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                   placeholder="Tell us about the bottleneck you want to solve..."
                   className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none resize-none"
                 />

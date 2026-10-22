@@ -17,18 +17,16 @@ import TechStackIcons from "@/components/TechStackIcons";
 
 export default function HomePage() {
   return (
-    <div className="relative overflow-hidden bg-[#09101d]">
-      {/* Background Gradients & Ambient Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#004157]/25 via-[#0a814f]/15 to-transparent blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-[850px] left-0 w-[550px] h-[550px] bg-[#004157]/20 blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-[1600px] right-0 w-[500px] h-[500px] bg-[#0a814f]/15 blur-[140px] pointer-events-none -z-10" />
+    <div className="relative overflow-hidden bg-[#080c14]">
+      {/* Subtle Linear-style Ambient Lighting */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-500/12 via-slate-900/0 to-transparent blur-3xl pointer-events-none -z-10" />
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 md:pt-40 md:pb-28 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             {/* Live Studio Status Badge */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-[#004157]/30 text-emerald-300 text-xs sm:text-sm font-medium mb-8 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/5 text-emerald-300 text-xs sm:text-sm font-medium mb-8 backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Dhaka Studio · 40+ Production Deployments · 24/7 SLA Active</span>
             </div>
@@ -48,30 +46,30 @@ export default function HomePage() {
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/contact"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-xl shadow-emerald-500/25 hover:-translate-y-0.5 text-base"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 text-sm sm:text-base"
               >
                 Schedule an Architecture Audit
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
               <Link
                 href="/services"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-slate-200 bg-[#004157]/40 hover:bg-[#004157]/70 border border-emerald-500/30 transition-all text-base hover:text-white"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-slate-200 bg-[#0d1322] hover:bg-[#131c31] border border-white/[0.08] hover:border-emerald-500/30 transition-all text-sm sm:text-base hover:text-white"
               >
                 Explore Modules & Stack
               </Link>
             </div>
 
             {/* Executive SLA & Trust Bar */}
-            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 sm:p-6 rounded-2xl bg-[#004157]/20 border border-white/[0.08] backdrop-blur-md">
-              <div className="text-center p-3 border-r border-slate-800/80 last:border-none">
+            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 sm:p-6 rounded-2xl bg-[#0c1220]/80 border border-white/[0.08] backdrop-blur-md">
+              <div className="text-center p-3 border-r border-white/[0.06] last:border-none">
                 <p className="text-3xl sm:text-4xl font-extrabold text-white font-mono">99.98%</p>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1">Guaranteed SLA Uptime</p>
               </div>
-              <div className="text-center p-3 md:border-r border-slate-800/80 last:border-none">
+              <div className="text-center p-3 md:border-r border-white/[0.06] last:border-none">
                 <p className="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-mono">&lt; 15 min</p>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1">Critical Escalation Response</p>
               </div>
-              <div className="text-center p-3 border-r border-slate-800/80 last:border-none">
+              <div className="text-center p-3 border-r border-white/[0.06] last:border-none">
                 <p className="text-3xl sm:text-4xl font-extrabold text-sky-400 font-mono">100%</p>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1">Client Code & IP Ownership</p>
               </div>
@@ -87,12 +85,12 @@ export default function HomePage() {
       {/* Flagship Venture / Product Incubator: AriseSell */}
       <section id="products" className="py-12 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl bg-gradient-to-r from-[#004157]/30 via-[#09101d] to-[#0a814f]/25 border border-emerald-500/30 shadow-2xl p-8 sm:p-12 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="rounded-2xl bg-[#0c1220] border border-white/[0.08] hover:border-emerald-500/30 transition-all shadow-xl p-8 sm:p-12 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Flagship In-House Product</span>
                 </div>
@@ -123,7 +121,7 @@ export default function HomePage() {
                 <div className="pt-4 flex flex-wrap items-center gap-4">
                   <Link
                     href="/contact?service=arisesell"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-colors text-sm shadow-lg shadow-emerald-500/20"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-colors text-sm shadow-md shadow-emerald-500/20"
                   >
                     Request AriseSell Demo & Pilot
                     <ArrowRight className="w-4 h-4" />
@@ -136,13 +134,13 @@ export default function HomePage() {
 
               {/* Product Card Visual */}
               <div className="lg:col-span-5 flex justify-center">
-                <div className="p-8 rounded-3xl bg-[#0a0f1d] border border-emerald-500/30 shadow-2xl flex flex-col items-center text-center relative max-w-sm w-full">
-                  <div className="w-36 h-36 relative mb-4 p-3 bg-slate-900/90 rounded-2xl border border-emerald-500/25 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+                <div className="p-8 rounded-2xl bg-[#080c14] border border-white/[0.08] shadow-xl flex flex-col items-center text-center relative max-w-sm w-full">
+                  <div className="w-32 h-32 relative mb-4 p-3 bg-slate-900/60 rounded-xl border border-white/[0.08] flex items-center justify-center shadow-md">
                     <Image
                       src="/brand/arisesell-icon.svg"
                       alt="AriseSell Icon"
-                      width={130}
-                      height={130}
+                      width={120}
+                      height={120}
                       className="w-full h-full object-contain"
                       priority
                     />
@@ -153,9 +151,9 @@ export default function HomePage() {
                     <Image
                       src="/brand/arisesell-logo-white-cropped.png"
                       alt="AriseSell Official Logo"
-                      width={220}
-                      height={50}
-                      className="w-auto h-9 mx-auto object-contain"
+                      width={200}
+                      height={46}
+                      className="w-auto h-8 mx-auto object-contain"
                     />
                   </div>
 
@@ -228,11 +226,11 @@ export default function HomePage() {
               return (
                 <div
                   key={service.id}
-                  className="rounded-3xl bg-[#004157]/15 border border-white/[0.08] p-8 hover:border-emerald-500/40 transition-all hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col justify-between group"
+                  className="rounded-2xl bg-[#0c1220] border border-white/[0.08] p-8 hover:border-emerald-500/35 transition-all hover:shadow-xl hover:shadow-black/30 flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="w-14 h-14 rounded-2xl bg-[#004157]/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6 group-hover:bg-emerald-400 group-hover:text-slate-950 transition-all">
-                      <IconComponent className="w-7 h-7" />
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 group-hover:bg-emerald-400 group-hover:text-slate-950 transition-all">
+                      <IconComponent className="w-6 h-6" />
                     </div>
                     <h3 className="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
                       {service.title}
@@ -254,10 +252,10 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between">
+                  <div className="mt-8 pt-6 border-t border-white/[0.06] flex items-center justify-between">
                     <div className="flex flex-wrap gap-1.5">
                       {service.techStack.slice(0, 4).map((tech) => (
-                        <span key={tech} className="text-xs px-2.5 py-1 rounded-md bg-[#004157]/30 text-emerald-300 font-mono border border-emerald-500/20">
+                        <span key={tech} className="text-xs px-2.5 py-1 rounded-md bg-white/[0.04] text-emerald-300 font-mono border border-white/[0.08]">
                           {tech}
                         </span>
                       ))}
@@ -284,10 +282,10 @@ export default function HomePage() {
       </section>
 
       {/* Verified Client Testimonials Section */}
-      <section className="py-24 bg-[#070b14] border-y border-white/[0.08] relative">
+      <section className="py-24 bg-[#080c14] border-y border-white/[0.06] relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 bg-[#004157]/40 px-3 py-1 rounded-full border border-emerald-500/30">
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
               Verified Client Endorsements
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
@@ -302,7 +300,7 @@ export default function HomePage() {
             {testimonialsData.map((test) => (
               <div
                 key={test.id}
-                className="rounded-3xl bg-[#09101d] border border-white/[0.08] p-8 flex flex-col justify-between hover:border-emerald-500/30 transition-all shadow-xl relative"
+                className="rounded-2xl bg-[#0c1220] border border-white/[0.08] p-8 flex flex-col justify-between hover:border-emerald-500/30 transition-all shadow-md relative"
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">
@@ -319,13 +317,15 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-800 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#004157] border border-emerald-500/30 flex items-center justify-center font-bold text-white text-sm">
-                    {test.author.split(" ").map(n => n[0]).join("")}
+                <div className="mt-8 pt-6 border-t border-white/[0.06] flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#0d1527] border border-emerald-500/25 flex items-center justify-center font-bold text-emerald-300 text-sm">
+                    {test.author.split(" ").map((n) => n[0]).join("")}
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-white">{test.author}</h4>
-                    <p className="text-xs text-slate-400">{test.role}, <span className="text-slate-300">{test.company}</span></p>
+                    <p className="text-xs text-slate-400">
+                      {test.role}, <span className="text-slate-300">{test.company}</span>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function HomePage() {
       <section className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 bg-[#004157]/40 px-3 py-1 rounded-full border border-emerald-500/30">
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
               Clear Engagement Framework
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-3">
@@ -353,15 +353,15 @@ export default function HomePage() {
             {engagementModels.map((model, idx) => (
               <div 
                 key={idx}
-                className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                className={`p-8 rounded-2xl border transition-all flex flex-col justify-between ${
                   idx === 1 
-                    ? "bg-[#004157]/25 border-emerald-500/50 shadow-2xl shadow-emerald-500/10 relative"
-                    : "bg-[#09101d] border-white/[0.08]"
+                    ? "bg-[#0d1527] border-emerald-500/40 shadow-xl shadow-emerald-500/5 relative"
+                    : "bg-[#0c1220] border-white/[0.08] hover:border-white/[0.14]"
                 }`}
               >
                 <div>
                   {idx === 1 && (
-                    <span className="inline-block mb-3 px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-bold text-[11px] uppercase tracking-wider">
+                    <span className="inline-block mb-3 px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-bold text-[11px] uppercase tracking-wider">
                       Most Popular For Scaling
                     </span>
                   )}
@@ -369,7 +369,7 @@ export default function HomePage() {
                   <p className="text-xs font-mono text-emerald-400 mt-1 font-semibold">{model.timeline}</p>
                   <p className="text-sm text-slate-300 mt-3 leading-relaxed">{model.subtitle}</p>
 
-                  <div className="my-6 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
+                  <div className="my-6 p-3 rounded-xl bg-slate-900/60 border border-white/[0.06] text-xs text-slate-400">
                     <strong className="text-slate-300 block mb-1">Best suited for:</strong>
                     {model.bestFor}
                   </div>
@@ -404,7 +404,7 @@ export default function HomePage() {
       </section>
 
       {/* Tech Stack Banner */}
-      <section className="py-16 bg-[#060a12] border-t border-white/[0.08]">
+      <section className="py-16 bg-[#080c14] border-t border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xs font-mono uppercase tracking-widest text-emerald-400/90 mb-8">
             Engineered on Battle-Tested Enterprise Foundations

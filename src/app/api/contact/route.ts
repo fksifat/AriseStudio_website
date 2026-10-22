@@ -1,5 +1,26 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import fs from "fs/promises";
+import path from "path";
+
+const escapeHtml = (str: string) =>
+  str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+// shortcut: local JSONL fallback; upgrade to PostgreSQL/Supabase when scaling to multi-region serverless
+async function persistSubmission(filename: string, data: Record<string, unknown>) {
+  const line = JSON.stringify(data) + "\n";
+  try {
+    const dir = path.join(process.cwd(), "data");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.appendFile(path.join(dir, filename), line, "utf8");
+  } catch {
+    try {
+      await fs.appendFile(path.join("/tmp", filename), line, "utf8");
+    } catch (err) {
+      console.error("[Persistence Error]:", err);
+    }
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -40,6 +61,7 @@ export async function POST(req: Request) {
     };
 
     console.log("[AriseStudio Contact Lead Received]:", leadData);
+    await persistSubmission("leads.jsonl", leadData);
 
     // Optional email dispatch via SMTP if environment variables are configured
     const smtpHost = process.env.SMTP_HOST;
@@ -70,33 +92,33 @@ export async function POST(req: Request) {
             <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold; width: 140px;">Full Name:</td>
-                <td style="padding: 10px; color: #ffffff;">${leadData.name}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(leadData.name)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Email:</td>
-                <td style="padding: 10px; color: #ffffff;"><a href="mailto:${leadData.email}" style="color: #38bdf8;">${leadData.email}</a></td>
+                <td style="padding: 10px; color: #ffffff;"><a href="mailto:${encodeURIComponent(leadData.email)}" style="color: #38bdf8;">${escapeHtml(leadData.email)}</a></td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Phone / WhatsApp:</td>
-                <td style="padding: 10px; color: #ffffff;">${leadData.phone}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(leadData.phone)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Company:</td>
-                <td style="padding: 10px; color: #ffffff;">${leadData.company}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(leadData.company)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Service Needed:</td>
-                <td style="padding: 10px; color: #ffffff;">${leadData.service}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(leadData.service)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Budget Bracket:</td>
-                <td style="padding: 10px; color: #ffffff;">${leadData.budget}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(leadData.budget)}</td>
               </tr>
             </table>
 
             <div style="margin-top: 20px; padding: 15px; background-color: #004157; border-radius: 6px;">
               <h3 style="margin-top: 0; color: #34d399; font-size: 14px;">Project Details / Message:</h3>
-              <p style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #f1f5f9;">${leadData.message}</p>
+              <p style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #f1f5f9;">${escapeHtml(leadData.message)}</p>
             </div>
 
             <p style="font-size: 12px; color: #64748b; margin-top: 24px;">Submitted on ${new Date().toLocaleString()}</p>
@@ -107,7 +129,7 @@ export async function POST(req: Request) {
           from: `"AriseStudio Website" <${smtpUser}>`,
           to: recipient,
           replyTo: leadData.email,
-          subject: `[Lead] ${leadData.name} - ${leadData.service} (${leadData.company})`,
+          subject: `[Lead] ${leadData.name.replace(/[\r\n]/g, " ")} - ${leadData.service.replace(/[\r\n]/g, " ")} (${leadData.company.replace(/[\r\n]/g, " ")})`,
           html: htmlContent,
         });
 

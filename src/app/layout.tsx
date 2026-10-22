@@ -35,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark scroll-smooth">
-      <body className="min-h-screen flex flex-col bg-[#0a0f1d] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-300">
+      <body className="min-h-screen flex flex-col bg-[#080c14] text-slate-100 antialiased selection:bg-emerald-500/25 selection:text-emerald-300">
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />

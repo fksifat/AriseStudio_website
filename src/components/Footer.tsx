@@ -13,7 +13,7 @@ export default function Footer() {
     <footer className="bg-[#050811] border-t border-white/[0.08] text-slate-400">
       {/* Top Banner / Pre-footer Call to Action */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-b border-white/[0.06]">
-        <div className="relative rounded-3xl bg-gradient-to-r from-[#004157]/40 via-[#09101d] to-[#0a814f]/30 border border-emerald-500/20 p-8 sm:p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="relative rounded-2xl bg-[#0c1220] border border-white/[0.08] hover:border-emerald-500/30 transition-all p-8 sm:p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="max-w-2xl">

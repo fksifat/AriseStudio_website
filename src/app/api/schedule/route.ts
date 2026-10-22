@@ -1,5 +1,43 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import fs from "fs/promises";
+import path from "path";
+
+const escapeHtml = (str: string) =>
+  str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+// shortcut: local JSONL fallback; upgrade to PostgreSQL/Supabase when scaling to multi-region serverless
+async function persistSubmission(filename: string, data: Record<string, unknown>) {
+  const line = JSON.stringify(data) + "\n";
+  try {
+    const dir = path.join(process.cwd(), "data");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.appendFile(path.join(dir, filename), line, "utf8");
+  } catch {
+    try {
+      await fs.appendFile(path.join("/tmp", filename), line, "utf8");
+    } catch (err) {
+      console.error("[Persistence Error]:", err);
+    }
+  }
+}
+
+// shortcut: in-memory map resets on serverless cold starts; upgrade to Upstash Redis for distributed multi-region rate limiting
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const timestamps = (rateLimitMap.get(key) || []).filter((time) => now - time < windowMs);
+  if (timestamps.length >= limit) return false;
+  timestamps.push(now);
+  rateLimitMap.set(key, timestamps);
+  if (rateLimitMap.size > 1000) {
+    for (const [k, v] of rateLimitMap.entries()) {
+      if (v.every((t) => now - t > 3600000)) rateLimitMap.delete(k);
+    }
+  }
+  return true;
+}
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +66,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Rate limiting: prevent IP flooding and email bombing
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anonymous";
+
+    if (!checkRateLimit(`ip:${clientIp}`, 5, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { success: false, error: "Too many booking requests from this network. Please wait a few minutes." },
+        { status: 429 }
+      );
+    }
+
+    if (!checkRateLimit(`email:${email.toLowerCase().trim()}`, 2, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { success: false, error: "Too many bookings requested for this email address. Please check your inbox or try again later." },
+        { status: 429 }
+      );
+    }
+
     // Use configured Google Meet room URL if available
     const customMeetUrl = process.env.GOOGLE_MEET_URL?.trim() || process.env.NEXT_PUBLIC_GOOGLE_MEET_URL?.trim() || null;
     const googleMeetUrl = customMeetUrl;
@@ -46,6 +101,7 @@ export async function POST(req: Request) {
     };
 
     console.log("[AriseStudio Call Scheduled]:", bookingData);
+    await persistSubmission("bookings.jsonl", bookingData);
 
     // Optional email dispatch via SMTP
     const smtpHost = process.env.SMTP_HOST;
@@ -74,31 +130,31 @@ export async function POST(req: Request) {
             <p style="font-size: 14px; color: #94a3b8; margin-top: 0;">A new technical discovery consultation has been confirmed.</p>
             
             <div style="margin: 20px 0; padding: 16px; background-color: #004157; border-radius: 8px; border-left: 4px solid #10b981;">
-              <p style="margin: 0; font-size: 16px; font-weight: bold; color: #ffffff;">📅 ${bookingData.date} at ${bookingData.timeSlot}</p>
-              <p style="margin: 4px 0 0; font-size: 13px; color: #a7f3d0;">Timezone: ${bookingData.timezone}</p>
-              ${bookingData.googleMeetUrl ? `<p style="margin: 8px 0 0; font-size: 14px; color: #ffffff;">📹 Google Meet: <a href="${bookingData.googleMeetUrl}" style="color: #38bdf8; text-decoration: underline;">${bookingData.googleMeetUrl}</a></p>` : `<p style="margin: 8px 0 0; font-size: 13px; color: #a7f3d0;">📹 Google Meet: Video link attached via calendar invite.</p>`}
+              <p style="margin: 0; font-size: 16px; font-weight: bold; color: #ffffff;">📅 ${escapeHtml(bookingData.date)} at ${escapeHtml(bookingData.timeSlot)}</p>
+              <p style="margin: 4px 0 0; font-size: 13px; color: #a7f3d0;">Timezone: ${escapeHtml(bookingData.timezone)}</p>
+              ${bookingData.googleMeetUrl && /^https?:\/\//i.test(bookingData.googleMeetUrl) ? `<p style="margin: 8px 0 0; font-size: 14px; color: #ffffff;">📹 Google Meet: <a href="${encodeURI(bookingData.googleMeetUrl)}" style="color: #38bdf8; text-decoration: underline;">${escapeHtml(bookingData.googleMeetUrl)}</a></p>` : `<p style="margin: 8px 0 0; font-size: 13px; color: #a7f3d0;">📹 Google Meet: Video link attached via calendar invite.</p>`}
             </div>
 
             <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold; width: 140px;">Client Name:</td>
-                <td style="padding: 10px; color: #ffffff;">${bookingData.name}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(bookingData.name)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Corporate Email:</td>
-                <td style="padding: 10px; color: #ffffff;"><a href="mailto:${bookingData.email}" style="color: #38bdf8;">${bookingData.email}</a></td>
+                <td style="padding: 10px; color: #ffffff;"><a href="mailto:${encodeURIComponent(bookingData.email)}" style="color: #38bdf8;">${escapeHtml(bookingData.email)}</a></td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Company:</td>
-                <td style="padding: 10px; color: #ffffff;">${bookingData.company}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(bookingData.company)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Topic / Area:</td>
-                <td style="padding: 10px; color: #ffffff;">${bookingData.service}</td>
+                <td style="padding: 10px; color: #ffffff;">${escapeHtml(bookingData.service)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Project Notes:</td>
-                <td style="padding: 10px; color: #f1f5f9; white-space: pre-wrap;">${bookingData.notes}</td>
+                <td style="padding: 10px; color: #f1f5f9; white-space: pre-wrap;">${escapeHtml(bookingData.notes)}</td>
               </tr>
             </table>
 
@@ -110,7 +166,7 @@ export async function POST(req: Request) {
           from: `"AriseStudio Schedule" <${smtpUser}>`,
           to: recipient,
           replyTo: bookingData.email,
-          subject: `[Appointment] 30m with ${bookingData.name} (${bookingData.company}) - ${bookingData.date} ${bookingData.timeSlot}`,
+          subject: `[Appointment] 30m with ${bookingData.name.replace(/[\r\n]/g, " ")} (${bookingData.company.replace(/[\r\n]/g, " ")}) - ${bookingData.date} ${bookingData.timeSlot}`,
           html: htmlContent,
         });
 

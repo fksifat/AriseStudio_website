@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { 
   Mail, 
   Phone, 
@@ -44,15 +43,21 @@ function ContactForm() {
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [formData, setFormData] = useState(() => ({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    service: getInitialService(serviceParam, roleParam),
-    budget: "$2,000 - $5,000",
-    message: getInitialMessage(roleParam)
-  }));
+  const [formData, setFormData] = useState(() => {
+    const service = getInitialService(serviceParam, roleParam);
+    const career = service === "careers-application";
+    return {
+      name: "",
+      email: "",
+      phone: "",
+      company: "",
+      service,
+      budget: career ? "1 - 3 Years" : "$3,000 - $8,000",
+      message: getInitialMessage(roleParam),
+    };
+  });
+
+  const isCareer = formData.service === "careers-application";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +98,7 @@ function ContactForm() {
       phone: "",
       company: "",
       service: "e-commerce-automation",
-      budget: "$2,000 - $5,000",
+      budget: "$3,000 - $8,000",
       message: ""
     });
   };
@@ -106,10 +111,14 @@ function ContactForm() {
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <h3 className="text-2xl sm:text-3xl font-bold text-white">
-            Consultation Request Received!
+            {isCareer ? "Application Received!" : "Consultation Request Received!"}
           </h3>
           <p className="text-slate-300 max-w-md mx-auto text-sm leading-relaxed">
-            Thank you, <strong className="text-white">{formData.name}</strong>. Your consultation inquiry regarding <strong className="text-[#a7f3d0]">{formData.service}</strong> has been logged into our engineering dispatch queue. An architect will reach out via <strong className="text-white">{formData.email}</strong> within 24 hours.
+            {isCareer ? (
+              <>Thank you, <strong className="text-white">{formData.name}</strong>. Your application has been logged into our talent review queue. Our engineering leadership will review your profile and reach out via <strong className="text-white">{formData.email}</strong>.</>
+            ) : (
+              <>Thank you, <strong className="text-white">{formData.name}</strong>. Your consultation inquiry regarding <strong className="text-[#a7f3d0]">{formData.service}</strong> has been logged into our engineering dispatch queue. An architect will reach out via <strong className="text-white">{formData.email}</strong> within 24 hours.</>
+            )}
           </p>
           <div className="pt-4">
             <button
@@ -118,7 +127,7 @@ function ContactForm() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#004157]/60 hover:bg-[#004157] border border-[#10b981]/40 text-sm font-semibold text-white transition-all hover:scale-105"
             >
               <RefreshCw className="w-4 h-4" />
-              Submit Another Inquiry
+              {isCareer ? "Submit Another Application" : "Submit Another Inquiry"}
             </button>
           </div>
         </div>
@@ -152,7 +161,7 @@ function ContactForm() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Corporate Email *
+                {isCareer ? "Email Address *" : "Corporate Email *"}
               </label>
               <input
                 type="email"
@@ -160,7 +169,7 @@ function ContactForm() {
                 disabled={status === "loading"}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="farhan@company.com"
+                placeholder={isCareer ? "you@example.com" : "farhan@company.com"}
                 className="w-full px-4 py-3 rounded-xl bg-[#09101d] border border-slate-700/80 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] text-sm disabled:opacity-60 transition-colors"
               />
             </div>
@@ -183,14 +192,14 @@ function ContactForm() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Company Name
+                {isCareer ? "Portfolio / GitHub / LinkedIn" : "Company Name"}
               </label>
               <input
                 type="text"
                 disabled={status === "loading"}
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder="Your Organization"
+                placeholder={isCareer ? "https://github.com/... or linkedin.com/..." : "Your Organization"}
                 className="w-full px-4 py-3 rounded-xl bg-[#09101d] border border-slate-700/80 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] text-sm disabled:opacity-60 transition-colors"
               />
             </div>
@@ -204,7 +213,15 @@ function ContactForm() {
               <select
                 disabled={status === "loading"}
                 value={formData.service}
-                onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                onChange={(e) => {
+                  const newService = e.target.value;
+                  const isNowCareer = newService === "careers-application";
+                  const wasCareer = formData.service === "careers-application";
+                  let newBudget = formData.budget;
+                  if (isNowCareer && !wasCareer) newBudget = "1 - 3 Years";
+                  if (!isNowCareer && wasCareer) newBudget = "$3,000 - $8,000";
+                  setFormData({ ...formData, service: newService, budget: newBudget });
+                }}
                 className="w-full px-4 py-3 rounded-xl bg-[#09101d] border border-slate-700/80 text-white focus:outline-none focus:border-[#10b981] text-sm disabled:opacity-60"
               >
                 <option value="e-commerce-automation">E-Commerce Automation System</option>
@@ -219,7 +236,7 @@ function ContactForm() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Estimated Budget Bracket
+                {isCareer ? "Years of Experience" : "Estimated Budget Bracket"}
               </label>
               <select
                 disabled={status === "loading"}
@@ -227,18 +244,31 @@ function ContactForm() {
                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl bg-[#09101d] border border-slate-700/80 text-white focus:outline-none focus:border-[#10b981] text-sm disabled:opacity-60"
               >
-                <option value="$1,000 - $3,000">$1,000 – $3,000 (Starter Module)</option>
-                <option value="$3,000 - $8,000">$3,000 – $8,000 (Growth Automation)</option>
-                <option value="$8,000 - $25,000">$8,000 – $25,000 (Full Enterprise ERP)</option>
-                <option value="$25,000+">$25,000+ (High-Scale Architecture)</option>
-                <option value="monthly-retainer">Monthly IT Support Retainer</option>
+                {isCareer ? (
+                  <>
+                    <option value="Student / Entry-Level">Student / Entry-Level</option>
+                    <option value="1 - 3 Years">1 – 3 Years Experience</option>
+                    <option value="3 - 5 Years">3 – 5 Years Experience</option>
+                    <option value="5+ Years Senior">5+ Years Senior / Lead</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="$1,000 - $3,000">$1,000 – $3,000 (Starter Module)</option>
+                    <option value="$3,000 - $8,000">$3,000 – $8,000 (Growth Automation)</option>
+                    <option value="$8,000 - $25,000">$8,000 – $25,000 (Full Enterprise ERP)</option>
+                    <option value="$25,000+">$25,000+ (High-Scale Architecture)</option>
+                    <option value="monthly-retainer">Monthly IT Support Retainer</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Tell us about your project or current operational bottlenecks *
+              {isCareer
+                ? "Cover Note, Background & Core Skills *"
+                : "Tell us about your project or current operational bottlenecks *"}
             </label>
             <textarea
               required
@@ -246,7 +276,11 @@ function ContactForm() {
               rows={4}
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              placeholder="Describe your current systems, what you wish to automate, and your target completion timeline..."
+              placeholder={
+                isCareer
+                  ? "Share your core stack, relevant projects or open-source work, and what excites you about joining AriseStudio..."
+                  : "Describe your current systems, what you wish to automate, and your target completion timeline..."
+              }
               className="w-full px-4 py-3 rounded-xl bg-[#09101d] border border-slate-700/80 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] text-sm disabled:opacity-60 transition-colors"
             />
           </div>
@@ -259,12 +293,12 @@ function ContactForm() {
             {status === "loading" ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Sending Consultation Request...</span>
+                <span>{isCareer ? "Submitting Application..." : "Sending Consultation Request..."}</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                <span>Submit Consultation Request</span>
+                <span>{isCareer ? "Submit Application" : "Submit Consultation Request"}</span>
               </>
             )}
           </button>
