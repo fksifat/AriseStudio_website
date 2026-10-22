@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import fs from "fs/promises";
 import path from "path";
+import { getTursoClient, initTursoSchema } from "@/lib/turso";
 
 const escapeHtml = (str: string) =>
   str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -128,6 +129,38 @@ export async function POST(req: Request) {
     };
 
     console.log("[AriseStudio Call Scheduled]:", bookingData);
+
+    // Persist to Turso Cloud SQLite (survives Vercel deploys & cold starts)
+    const turso = getTursoClient();
+    if (turso) {
+      try {
+        await initTursoSchema();
+        await turso.execute({
+          sql: `
+            INSERT INTO bookings (date, timeSlot, name, email, company, timezone, service, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(date, timeSlot) DO UPDATE SET
+              name = excluded.name,
+              email = excluded.email,
+              company = excluded.company,
+              notes = excluded.notes;
+          `,
+          args: [
+            bookingData.date,
+            bookingData.timeSlot,
+            bookingData.name,
+            bookingData.email,
+            bookingData.company || "",
+            bookingData.timezone || "",
+            bookingData.service || "",
+            bookingData.notes || "",
+          ],
+        });
+      } catch (tursoErr) {
+        console.error("[Turso Persistence Error]:", tursoErr);
+      }
+    }
+
     await persistSubmission("bookings.jsonl", bookingData);
 
     // Optional email dispatch via SMTP
@@ -228,6 +261,34 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
+    const bookedSlots: string[] = [];
+
+    // 1. Query Turso Cloud SQLite if configured
+    const turso = getTursoClient();
+    if (turso) {
+      try {
+        await initTursoSchema();
+        const result = await turso.execute(
+          "SELECT date, timeSlot FROM bookings ORDER BY id DESC"
+        );
+        for (const row of result.rows) {
+          if (row.date && row.timeSlot) {
+            bookedSlots.push(`${row.date}_${row.timeSlot}`);
+          }
+        }
+        if (bookedSlots.length > 0) {
+          return NextResponse.json({
+            success: true,
+            bookedSlots: Array.from(new Set(bookedSlots)),
+            source: "turso",
+          });
+        }
+      } catch (tursoErr) {
+        console.error("[Turso Fetch Error]:", tursoErr);
+      }
+    }
+
+    // 2. Fallback to local files
     const primaryPath = path.join(process.cwd(), "data", "bookings.jsonl");
     const tmpPath = path.join("/tmp", "bookings.jsonl");
     let content = "";
@@ -241,7 +302,6 @@ export async function GET() {
       }
     }
     const lines = content.trim().split("\n").filter(Boolean);
-    const bookedSlots: string[] = [];
     for (const line of lines) {
       try {
         const parsed = JSON.parse(line);
@@ -252,7 +312,11 @@ export async function GET() {
         // ignore malformed line
       }
     }
-    return NextResponse.json({ success: true, bookedSlots });
+    return NextResponse.json({
+      success: true,
+      bookedSlots: Array.from(new Set(bookedSlots)),
+      source: "local",
+    });
   } catch {
     return NextResponse.json({ success: true, bookedSlots: [] });
   }
