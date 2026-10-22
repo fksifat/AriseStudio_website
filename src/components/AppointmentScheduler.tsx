@@ -11,6 +11,8 @@ import {
   Loader2,
   ExternalLink,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface DaySchedule {
@@ -113,10 +115,129 @@ export default function AppointmentScheduler() {
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
   const currentDate = useMemo(() => (isClient ? new Date() : null), [isClient]);
-  const scheduleDays = useMemo(
-    () => (currentDate ? generateRollingSchedule(7, currentDate) : []),
-    [currentDate],
+  const [scheduleRefDate, setScheduleRefDate] = useState<Date | null>(null);
+  const [viewMonthState, setViewMonthState] = useState<number | null>(null);
+  const [viewYearState, setViewYearState] = useState<number | null>(null);
+
+  const activeRefDate = useMemo(
+    () => scheduleRefDate || currentDate,
+    [scheduleRefDate, currentDate],
   );
+  const viewMonth =
+    viewMonthState ?? (activeRefDate ? activeRefDate.getMonth() : 9);
+  const viewYear =
+    viewYearState ?? (activeRefDate ? activeRefDate.getFullYear() : 2026);
+
+  const scheduleDays = useMemo(
+    () => (activeRefDate ? generateRollingSchedule(7, activeRefDate) : []),
+    [activeRefDate],
+  );
+
+  const isPrevMonthDisabled = useMemo(() => {
+    if (!currentDate) return true;
+    const currentY = currentDate.getFullYear();
+    const currentM = currentDate.getMonth();
+    return (
+      viewYear < currentY || (viewYear === currentY && viewMonth <= currentM)
+    );
+  }, [currentDate, viewYear, viewMonth]);
+
+  const isPrevWeekDisabled = useMemo(() => {
+    if (!currentDate) return true;
+    const base = scheduleRefDate || currentDate;
+    const todayMidnight = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+    ).getTime();
+    const baseMidnight = new Date(
+      base.getFullYear(),
+      base.getMonth(),
+      base.getDate(),
+    ).getTime();
+    return baseMidnight <= todayMidnight;
+  }, [currentDate, scheduleRefDate]);
+
+  const handlePrevMonth = () => {
+    if (isPrevMonthDisabled) return;
+    if (viewMonth === 0) {
+      setViewMonthState(11);
+      setViewYearState((y) => (y !== null ? y - 1 : 2025));
+    } else {
+      setViewMonthState((m) => (m !== null ? m - 1 : 0));
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonthState(0);
+      setViewYearState((y) => (y !== null ? y + 1 : 2027));
+    } else {
+      setViewMonthState((m) => (m !== null ? m + 1 : 1));
+    }
+  };
+
+  const handlePrevWeek = () => {
+    if (isPrevWeekDisabled || !currentDate) return;
+    const base = scheduleRefDate || currentDate;
+    const newRef = new Date(base);
+    newRef.setDate(base.getDate() - 7);
+    const todayMidnight = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+    );
+    if (newRef < todayMidnight) {
+      newRef.setTime(todayMidnight.getTime());
+    }
+    setScheduleRefDate(newRef);
+    setViewYearState(newRef.getFullYear());
+    setViewMonthState(newRef.getMonth());
+    setSelectedDayIndex(0);
+    setSelectedSlot(null);
+  };
+
+  const handleNextWeek = () => {
+    if (!currentDate) return;
+    const base = scheduleRefDate || currentDate;
+    const newRef = new Date(base);
+    newRef.setDate(base.getDate() + 7);
+    setScheduleRefDate(newRef);
+    setViewYearState(newRef.getFullYear());
+    setViewMonthState(newRef.getMonth());
+    setSelectedDayIndex(0);
+    setSelectedSlot(null);
+  };
+
+  const handleCalendarDayClick = (
+    dayNum: number,
+    monthIdx: number,
+    yearNum: number,
+  ) => {
+    if (!currentDate) return;
+    const targetDate = new Date(yearNum, monthIdx, dayNum);
+    const todayMidnight = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+    );
+    if (targetDate < todayMidnight) return;
+
+    setScheduleRefDate(targetDate);
+    setViewYearState(yearNum);
+    setViewMonthState(monthIdx);
+    setSelectedDayIndex(0);
+    setSelectedSlot(null);
+  };
+
+  const dateRangeLabel = useMemo(() => {
+    if (!scheduleDays || scheduleDays.length === 0) return "";
+    const first = scheduleDays[0];
+    const last = scheduleDays[scheduleDays.length - 1];
+    const firstParts = first.fullDate.split(", ");
+    const lastParts = last.fullDate.split(", ");
+    return `${firstParts[1]} – ${lastParts[1]}`;
+  }, [scheduleDays]);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedTimezone, setSelectedTimezone] = useState<string>(
@@ -276,11 +397,7 @@ export default function AppointmentScheduler() {
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
   };
 
-  const currentMonthIdx = currentDate ? currentDate.getMonth() : 0;
-  const currentYear = currentDate ? currentDate.getFullYear() : 2026;
-  const monthHeader = currentDate
-    ? `${monthNames[currentMonthIdx]} ${currentYear}`
-    : "";
+  const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
     <div className="w-full max-w-5xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-3 sm:p-5 relative">
@@ -499,9 +616,25 @@ export default function AppointmentScheduler() {
                 <span className="text-sm font-bold text-white font-mono">
                   {monthHeader}
                 </span>
-                <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                  Rolling 7 Days
-                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    disabled={isPrevMonthDisabled}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                    title="Previous month"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                    title="Next month"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Day Initials */}
@@ -520,17 +653,17 @@ export default function AppointmentScheduler() {
                 {/* Preceding days from previous month */}
                 {Array.from(
                   {
-                    length: new Date(currentYear, currentMonthIdx, 1).getDay(),
+                    length: new Date(viewYear, viewMonth, 1).getDay(),
                   },
                   (_, i) => {
                     const prevMonthDays = new Date(
-                      currentYear,
-                      currentMonthIdx,
+                      viewYear,
+                      viewMonth,
                       0,
                     ).getDate();
                     const firstDay = new Date(
-                      currentYear,
-                      currentMonthIdx,
+                      viewYear,
+                      viewMonth,
                       1,
                     ).getDay();
                     const dayNum = prevMonthDays - firstDay + 1 + i;
@@ -546,51 +679,77 @@ export default function AppointmentScheduler() {
                 {Array.from(
                   {
                     length: new Date(
-                      currentYear,
-                      currentMonthIdx + 1,
+                      viewYear,
+                      viewMonth + 1,
                       0,
                     ).getDate(),
                   },
                   (_, i) => {
                     const dayNum = i + 1;
-                    const schedIdx = scheduleDays.findIndex(
-                      (sd) =>
-                        sd.dateNumber === dayNum &&
-                        sd.fullDate.includes(monthNames[currentMonthIdx]),
-                    );
+                    const targetDate = new Date(viewYear, viewMonth, dayNum);
+                    const todayMidnight = currentDate
+                      ? new Date(
+                          currentDate.getFullYear(),
+                          currentDate.getMonth(),
+                          currentDate.getDate(),
+                        )
+                      : null;
+                    const isPast = todayMidnight ? targetDate < todayMidnight : false;
+
+                    const schedIdx = scheduleDays.findIndex((sd) => {
+                      const d = new Date(sd.fullDate);
+                      return (
+                        d.getDate() === dayNum &&
+                        d.getMonth() === viewMonth &&
+                        d.getFullYear() === viewYear
+                      );
+                    });
                     const isSchedDay = schedIdx !== -1;
                     const isSelected =
                       isSchedDay && selectedDayIndex === schedIdx;
-                    const hasSlots =
-                      isSchedDay && scheduleDays[schedIdx].slots.length > 0;
-                    const isPast = dayNum < currentDate.getDate();
+                    const dayOfWeek = targetDate.getDay();
+                    const isClosed = defaultSlotsByWeekday[dayOfWeek]?.length === 0;
 
-                    if (isSchedDay) {
+                    if (isPast) {
                       return (
-                        <button
+                        <span
                           key={dayNum}
-                          onClick={() => setSelectedDayIndex(schedIdx)}
-                          disabled={!hasSlots}
-                          className={`p-2 rounded-full font-bold transition-all ${
-                            isSelected
-                              ? "bg-emerald-500 text-slate-950 ring-2 ring-emerald-400 shadow-md"
-                              : hasSlots
-                                ? "bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
-                                : "text-slate-600 cursor-not-allowed"
-                          }`}
+                          className="p-2 text-slate-700 cursor-not-allowed"
                         >
                           {dayNum}
-                        </button>
+                        </span>
                       );
                     }
 
                     return (
-                      <span
+                      <button
                         key={dayNum}
-                        className={`p-2 ${isPast ? "text-slate-700" : "text-slate-500"}`}
+                        type="button"
+                        disabled={isClosed}
+                        onClick={() => {
+                          if (isSchedDay) {
+                            setSelectedDayIndex(schedIdx);
+                          } else {
+                            handleCalendarDayClick(dayNum, viewMonth, viewYear);
+                          }
+                        }}
+                        className={`p-2 rounded-full font-bold transition-all ${
+                          isSelected
+                            ? "bg-emerald-500 text-slate-950 ring-2 ring-emerald-400 shadow-md scale-105"
+                            : isSchedDay
+                              ? "bg-slate-800/80 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
+                              : isClosed
+                                ? "text-slate-600 cursor-not-allowed"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer"
+                        }`}
+                        title={
+                          isClosed
+                            ? "Studio closed (Maintenance)"
+                            : `Select ${monthNames[viewMonth]} ${dayNum}`
+                        }
                       >
                         {dayNum}
-                      </span>
+                      </button>
                     );
                   },
                 )}
@@ -617,6 +776,39 @@ export default function AppointmentScheduler() {
             {/* Right Days & Pill Slot Columns (Directly matching Enosis / Google Calendar reference) */}
             <div className="lg:col-span-8 overflow-x-auto pb-4">
               <div className="min-w-[620px]">
+                {/* Columns Header with Week Navigation Arrows */}
+                <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-emerald-400">
+                      {dateRangeLabel}
+                    </span>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      Rolling 7 Days
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handlePrevWeek}
+                      disabled={isPrevWeekDisabled}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      title="Previous 7 Days"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Prev</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextWeek}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 transition-all"
+                      title="Next 7 Days"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
                 {/* Day Headers Row */}
                 <div className="grid grid-cols-7 gap-2 pb-4 text-center">
                   {scheduleDays.map((day, idx) => {
