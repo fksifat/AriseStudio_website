@@ -542,13 +542,36 @@ export default function AppointmentScheduler() {
       ) : (
         /* Main Schedule Section - Single Card Interface */
         <div className="pt-2">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-white/[0.06]">
             <h3 className="text-base sm:text-lg font-bold text-white">
               Select an appointment time
             </h3>
-            <span className="text-xs font-mono text-emerald-400 font-semibold">
-              {dateRangeLabel}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs font-mono text-emerald-400 font-semibold">
+                {dateRangeLabel}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePrevWeek}
+                  disabled={isPrevWeekDisabled}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Previous 7 Days"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Prev</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextWeek}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 transition-all"
+                  title="Next 7 Days"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-7 items-start">
@@ -721,39 +744,6 @@ export default function AppointmentScheduler() {
             {/* Right Days & Pill Slot Columns */}
             <div className="flex-1 w-full min-w-0 overflow-x-auto lg:overflow-x-visible pb-2">
               <div className="min-w-[560px] lg:min-w-0">
-                {/* Columns Header with Week Navigation Arrows */}
-                <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-emerald-400">
-                      {dateRangeLabel}
-                    </span>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                      Rolling 7 Days
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handlePrevWeek}
-                      disabled={isPrevWeekDisabled}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                      title="Previous 7 Days"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>Prev</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleNextWeek}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-emerald-500/40 transition-all"
-                      title="Next 7 Days"
-                    >
-                      <span>Next</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
                 {/* Day Headers Row */}
                 <div className="grid grid-cols-7 gap-2 sm:gap-2.5 pb-4 text-center">
                   {scheduleDays.map((day, idx) => {
