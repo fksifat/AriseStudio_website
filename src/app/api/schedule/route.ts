@@ -232,6 +232,7 @@ export async function POST(req: Request) {
       service: service ? String(service).trim() : "",
       notes: notesStr,
       googleMeetUrl,
+      calendarEventUrl,
       bookedAt: new Date().toISOString()
     };
 
