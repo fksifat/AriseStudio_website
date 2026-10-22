@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import fs from "fs/promises";
 import path from "path";
 import { getTursoClient, initTursoSchema } from "@/lib/turso";
+import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 
 const escapeHtml = (str: string) =>
   str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -186,14 +187,39 @@ export async function POST(req: Request) {
       );
     }
 
-    // Meeting URL: check if user provided one in notes, or use configured Google Meet room
+    // Meeting URL: check notes, generate unique room via Google Calendar API, or use fallback
     const notesStr = typeof notes === "string" ? notes.trim() : "";
     const extractedMeetingUrl = notesStr.match(/https?:\/\/[^\s]+/)?.[0];
+
+    let generatedMeetUrl: string | null = null;
+    let calendarEventUrl: string | null = null;
+
+    try {
+      const gcal = await createGoogleCalendarEvent({
+        title: `30-Min Discovery Session | AriseStudio with ${name.trim()}`,
+        description: `Technical Discovery Consultation with AriseStudio.\n\nAttendee: ${name.trim()} (${phone.trim()})\nEmail: ${email.trim()}${notesStr ? `\nNotes: ${notesStr}` : ""}\n\nHost: Farhan Kabir Sifat (Principal Systems Architect)`,
+        attendeeName: name.trim(),
+        attendeeEmail: email.trim(),
+        dateStr: date,
+        timeSlot,
+        timezone,
+      });
+
+      if (gcal.success && gcal.meetUrl) {
+        generatedMeetUrl = gcal.meetUrl;
+        calendarEventUrl = gcal.calendarEventUrl;
+        console.log("[Google Meet Created Successfully]:", generatedMeetUrl);
+      }
+    } catch (gcalErr) {
+      console.warn("[Google Calendar Service Notice]:", gcalErr);
+    }
+
     const defaultMeetUrl =
       process.env.GOOGLE_MEET_URL?.trim() ||
       process.env.NEXT_PUBLIC_GOOGLE_MEET_URL?.trim() ||
       "https://meet.google.com/lookup/arisestudio-discovery";
-    const googleMeetUrl = extractedMeetingUrl || defaultMeetUrl;
+
+    const googleMeetUrl = generatedMeetUrl || extractedMeetingUrl || defaultMeetUrl;
 
     const bookingData = {
       name: name.trim(),
