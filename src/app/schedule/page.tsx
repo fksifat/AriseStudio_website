@@ -14,7 +14,7 @@ export default function SchedulePage() {
       {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-[#004157]/20 via-[#0a814f]/10 to-transparent blur-3xl pointer-events-none -z-10" />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Compact Clean Header - AriseSell Style */}
         <div className="text-center max-w-xl mx-auto mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">

@@ -393,7 +393,7 @@ export default function AppointmentScheduler() {
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 relative">
+    <div className="w-full max-w-6xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 relative">
       {/* Sleek Integrated Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
         {/* Host Info */}
@@ -540,18 +540,18 @@ export default function AppointmentScheduler() {
           </div>
         </div>
       ) : (
-        /* Calendar & Columns Card */
-        <div className="rounded-3xl bg-[#09101d] border border-white/[0.08] shadow-2xl p-6 sm:p-8 lg:p-10 relative">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/[0.06]">
-            <h3 className="text-lg sm:text-xl font-bold text-white">
+        /* Main Schedule Section - Single Card Interface */
+        <div className="pt-2">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/[0.06]">
+            <h3 className="text-base sm:text-lg font-bold text-white">
               Select an appointment time
             </h3>
-            <span className="text-xs font-mono text-slate-400">
-              {monthHeader}
+            <span className="text-xs font-mono text-emerald-400 font-semibold">
+              {dateRangeLabel}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Mini Calendar Widget */}
             <div className="lg:col-span-4 p-5 rounded-2xl bg-slate-900/60 border border-white/[0.06] space-y-4">
               <div className="flex items-center justify-between pb-2">
@@ -715,9 +715,9 @@ export default function AppointmentScheduler() {
               </div>
             </div>
 
-            {/* Right Days & Pill Slot Columns (Directly matching Enosis / Google Calendar reference) */}
-            <div className="lg:col-span-8 overflow-x-auto pb-4">
-              <div className="min-w-[620px]">
+            {/* Right Days & Pill Slot Columns */}
+            <div className="lg:col-span-8 overflow-x-auto lg:overflow-x-visible pb-2">
+              <div className="min-w-[560px] lg:min-w-0">
                 {/* Columns Header with Week Navigation Arrows */}
                 <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
                   <div className="flex items-center gap-2">
@@ -752,7 +752,7 @@ export default function AppointmentScheduler() {
                 </div>
 
                 {/* Day Headers Row */}
-                <div className="grid grid-cols-7 gap-2 pb-4 text-center">
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pb-4 text-center">
                   {scheduleDays.map((day, idx) => {
                     const isSelected = selectedDayIndex === idx;
                     return (
@@ -779,7 +779,7 @@ export default function AppointmentScheduler() {
                 </div>
 
                 {/* Slots Columns */}
-                <div className="grid grid-cols-7 gap-2 pt-2 items-start">
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pt-2 items-start">
                   {scheduleDays.map((day, dIdx) => (
                     <div key={day.dateNumber} className="space-y-2">
                       {day.slots.length > 0 ? (
@@ -793,7 +793,7 @@ export default function AppointmentScheduler() {
                               type="button"
                               disabled={isBooked}
                               onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
-                              className={`w-full py-2 px-1 text-center rounded-full text-xs font-mono font-medium transition-all duration-150 border ${
+                              className={`w-full py-2 px-0.5 sm:px-1 text-center rounded-xl sm:rounded-full text-[11px] sm:text-xs font-mono font-medium transition-all duration-150 border ${
                                 isBooked
                                   ? "bg-slate-950/60 text-slate-500/70 border-slate-800/40 cursor-not-allowed line-through opacity-50 select-none hover:border-slate-800/40 hover:bg-slate-950/60"
                                   : isPicked
