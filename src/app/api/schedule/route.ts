@@ -314,56 +314,56 @@ export async function POST(req: Request) {
   </style>
 </head>
 <body class="body-bg" style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="body-bg" style="background-color: #f1f5f9; padding: 36px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="body-bg" style="background-color: #f1f5f9; padding: 20px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card-bg" style="max-width: 580px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 25px -4px rgba(0, 0, 0, 0.06);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card-bg" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);">
           
-          <!-- Brand Logo Header (Centered) -->
+          <!-- Brand Logo Header (Centered & Compact) -->
           <tr>
-            <td class="header-bg" align="center" style="padding: 32px 24px 24px 24px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9; text-align: center;">
+            <td class="header-bg" align="center" style="padding: 20px 20px 16px 20px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9; text-align: center;">
               <!-- Default Light Logo -->
               <div class="logo-light" style="display: block; text-align: center;">
-                <img src="${logoLightUrl}" alt="AriseStudio" width="168" height="50" style="display: block; margin: 0 auto; width: 168px; max-width: 168px; height: auto; border: 0;" />
+                <img src="${logoLightUrl}" alt="AriseStudio" width="148" height="44" style="display: block; margin: 0 auto; width: 148px; max-width: 148px; height: auto; border: 0;" />
               </div>
               <!-- Dark Mode Logo -->
               <!--[if !mso]><!-->
               <div class="logo-dark" style="display: none; text-align: center;">
-                <img src="${logoDarkUrl}" alt="AriseStudio" width="168" height="50" style="display: block; margin: 0 auto; width: 168px; max-width: 168px; height: auto; border: 0;" />
+                <img src="${logoDarkUrl}" alt="AriseStudio" width="148" height="44" style="display: block; margin: 0 auto; width: 148px; max-width: 148px; height: auto; border: 0;" />
               </div>
               <!--<![endif]-->
             </td>
           </tr>
 
-          <!-- Main Body -->
+          <!-- Main Body (Compact) -->
           <tr>
-            <td style="padding: 32px 32px 28px 32px;">
+            <td style="padding: 22px 24px 18px 24px;">
               <!-- Status Pill -->
-              <div class="badge-box" style="display: inline-block; padding: 5px 14px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 9999px; color: #059669; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;">
-                <img src="${iconCheckUrl}" width="13" height="13" style="vertical-align: -2px; margin-right: 6px; display: inline-block; border: 0;" alt="" />
+              <div class="badge-box" style="display: inline-block; padding: 4px 10px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 9999px; color: #059669; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;">
+                <img src="${iconCheckUrl}" width="12" height="12" style="vertical-align: -1px; margin-right: 5px; display: inline-block; border: 0;" alt="" />
                 30-Minute Consultation Confirmed
               </div>
 
               <!-- Main Heading -->
-              <h1 class="text-title" style="color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3; margin: 0 0 8px 0;">
+              <h1 class="text-title" style="color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3; margin: 0 0 6px 0;">
                 30 minutes with AriseStudio
               </h1>
-              <p class="text-sub" style="color: #475569; font-size: 14px; line-height: 1.5; margin: 0 0 24px 0;">
+              <p class="text-sub" style="color: #475569; font-size: 13.5px; line-height: 1.45; margin: 0 0 16px 0;">
                 Hi ${escapeHtml(bookingData.name)}, your discovery session has been scheduled with our Principal Systems Architect. Here are your meeting details:
               </p>
 
-              <!-- Session Highlight Card -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="highlight-box" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 26px;">
+              <!-- Session Highlight Card (Compact) -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="highlight-box" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px;">
                 <tr>
-                  <td style="padding: 20px;">
+                  <td style="padding: 14px 16px;">
                     <!-- Date & Time Row -->
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 6px;">
                       <tr>
-                        <td width="24" valign="middle" style="vertical-align: middle; padding-right: 10px;">
-                          <img src="${iconCalendarUrl}" width="16" height="16" style="display: block; width: 16px; height: 16px; border: 0;" alt="" />
+                        <td width="22" valign="middle" style="vertical-align: middle; padding-right: 8px;">
+                          <img src="${iconCalendarUrl}" width="15" height="15" style="display: block; width: 15px; height: 15px; border: 0;" alt="" />
                         </td>
                         <td valign="middle" style="vertical-align: middle;">
-                          <span class="text-strong" style="color: #0f172a; font-size: 15px; font-weight: 600;">
+                          <span class="text-strong" style="color: #0f172a; font-size: 14px; font-weight: 600;">
                             ${escapeHtml(bookingData.date)} &nbsp;·&nbsp; ${timeRangeStr}
                           </span>
                         </td>
@@ -371,13 +371,13 @@ export async function POST(req: Request) {
                     </table>
 
                     <!-- Timezone Row -->
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 14px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
                       <tr>
-                        <td width="24" valign="middle" style="vertical-align: middle; padding-right: 10px;">
-                          <img src="${iconGlobeUrl}" width="16" height="16" style="display: block; width: 16px; height: 16px; border: 0;" alt="" />
+                        <td width="22" valign="middle" style="vertical-align: middle; padding-right: 8px;">
+                          <img src="${iconGlobeUrl}" width="15" height="15" style="display: block; width: 15px; height: 15px; border: 0;" alt="" />
                         </td>
                         <td valign="middle" style="vertical-align: middle;">
-                          <span class="text-muted" style="color: #64748b; font-size: 12px; font-family: monospace;">
+                          <span class="text-muted" style="color: #64748b; font-size: 11.5px; font-family: monospace;">
                             ${escapeHtml(bookingData.timezone)}
                           </span>
                         </td>
@@ -385,31 +385,31 @@ export async function POST(req: Request) {
                     </table>
 
                     <!-- Host Row -->
-                    <div class="border-inner" style="border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 13px;">
-                      <span class="text-muted" style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Host</span>
+                    <div class="border-inner" style="border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px; font-size: 12.5px;">
+                      <span class="text-muted" style="color: #64748b; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Host</span>
                       <strong class="text-strong" style="color: #0f172a;">Farhan Kabir Sifat</strong> &nbsp;·&nbsp; <span class="text-sub" style="color: #475569;">Principal Systems Architect</span>
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Google Meet CTA Box -->
-              <div style="text-align: center; margin: 26px 0 20px 0;">
-                <a href="${encodeURI(googleMeetUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; background-color: #10b981; color: #022c22; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 20px; border-radius: 11px; letter-spacing: 0.01em;">
-                  <img src="${iconVideoUrl}" width="17" height="17" style="vertical-align: -3px; display: inline-block; margin-right: 8px; border: 0;" alt="" />
+              <!-- Google Meet CTA Box (Compact) -->
+              <div style="text-align: center; margin: 18px 0 14px 0;">
+                <a href="${encodeURI(googleMeetUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; background-color: #10b981; color: #022c22; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; padding: 11px 18px; border-radius: 8px; letter-spacing: 0.01em;">
+                  <img src="${iconVideoUrl}" width="16" height="16" style="vertical-align: -2px; display: inline-block; margin-right: 6px; border: 0;" alt="" />
                   Join with Google Meet
                 </a>
-                <p class="text-muted" style="margin: 10px 0 0 0; font-size: 12px; color: #64748b; word-break: break-all; text-align: center;">
+                <p class="text-muted" style="margin: 6px 0 0 0; font-size: 11.5px; color: #64748b; word-break: break-all; text-align: center;">
                   Direct link: <a href="${encodeURI(googleMeetUrl)}" style="color: #0284c7; text-decoration: underline;">${escapeHtml(googleMeetUrl)}</a>
                 </p>
-                <div style="margin-top: 16px; text-align: center;">
-                  <a href="${gCalUrl}" target="_blank" rel="noopener noreferrer" class="gcal-btn" style="display: inline-block; color: #0f172a; background-color: #ffffff; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 8px;">
-                    <span class="gcal-icon-light" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
-                      <img src="${iconCalendarBtnDarkUrl}" width="14" height="14" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                <div style="margin-top: 10px; text-align: center;">
+                  <a href="${gCalUrl}" target="_blank" rel="noopener noreferrer" class="gcal-btn" style="display: inline-block; color: #0f172a; background-color: #ffffff; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; text-decoration: none; padding: 7px 14px; border-radius: 6px;">
+                    <span class="gcal-icon-light" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">
+                      <img src="${iconCalendarBtnDarkUrl}" width="13" height="13" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
                     </span>
                     <!--[if !mso]><!-->
-                    <span class="gcal-icon-dark" style="display: none; vertical-align: -2px; margin-right: 6px;">
-                      <img src="${iconCalendarBtnLightUrl}" width="14" height="14" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                    <span class="gcal-icon-dark" style="display: none; vertical-align: -2px; margin-right: 5px;">
+                      <img src="${iconCalendarBtnLightUrl}" width="13" height="13" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
                     </span>
                     <!--<![endif]-->
                     Add to Google Calendar
@@ -417,32 +417,32 @@ export async function POST(req: Request) {
                 </div>
               </div>
 
-              <!-- Reservation Details Table -->
-              <div class="border-divider" style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 24px;">
-                <div class="text-muted" style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px;">
+              <!-- Reservation Details Table (Compact) -->
+              <div class="border-divider" style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 16px;">
+                <div class="text-muted" style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 8px;">
                   Reservation Details
                 </div>
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 12.5px;">
                   <tr>
-                    <td class="text-muted" style="padding: 7px 0; color: #64748b; width: 120px;">Full Name</td>
-                    <td class="text-strong" style="padding: 7px 0; color: #0f172a; font-weight: 600;">${escapeHtml(bookingData.name)}</td>
+                    <td class="text-muted" style="padding: 4px 0; color: #64748b; width: 110px;">Full Name</td>
+                    <td class="text-strong" style="padding: 4px 0; color: #0f172a; font-weight: 600;">${escapeHtml(bookingData.name)}</td>
                   </tr>
                   <tr>
-                    <td class="text-muted" style="padding: 7px 0; color: #64748b;">Email Address</td>
-                    <td style="padding: 7px 0; font-weight: 500;">
+                    <td class="text-muted" style="padding: 4px 0; color: #64748b;">Email Address</td>
+                    <td style="padding: 4px 0; font-weight: 500;">
                       <a href="mailto:${encodeURIComponent(bookingData.email)}" style="color: #0284c7; text-decoration: none;">${escapeHtml(bookingData.email)}</a>
                     </td>
                   </tr>
                   <tr>
-                    <td class="text-muted" style="padding: 7px 0; color: #64748b;">Phone Number</td>
-                    <td style="padding: 7px 0; font-weight: 500;">
+                    <td class="text-muted" style="padding: 4px 0; color: #64748b;">Phone Number</td>
+                    <td style="padding: 4px 0; font-weight: 500;">
                       <a href="tel:${escapeHtml(bookingData.phone)}" style="color: #0284c7; text-decoration: none;">${escapeHtml(bookingData.phone)}</a>
                     </td>
                   </tr>
                   ${hasNotes ? `
                   <tr>
-                    <td class="text-muted" style="padding: 7px 0; color: #64748b; vertical-align: top;">Notes</td>
-                    <td class="text-body" style="padding: 7px 0; color: #334155; font-weight: 400; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(bookingData.notes)}</td>
+                    <td class="text-muted" style="padding: 4px 0; color: #64748b; vertical-align: top;">Notes</td>
+                    <td class="text-body" style="padding: 4px 0; color: #334155; font-weight: 400; line-height: 1.4; white-space: pre-wrap;">${escapeHtml(bookingData.notes)}</td>
                   </tr>
                   ` : ""}
                 </table>
@@ -450,13 +450,13 @@ export async function POST(req: Request) {
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer (Compact) -->
           <tr>
-            <td class="footer-bg" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-              <p class="text-muted" style="margin: 0 0 6px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+            <td class="footer-bg" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 20px; text-align: center;">
+              <p class="text-muted" style="margin: 0 0 3px 0; font-size: 11.5px; color: #64748b; line-height: 1.4;">
                 Need to reschedule or update details? Simply reply directly to this email or reach us at <a href="mailto:contact@arisestudio.com" style="color: #0284c7; text-decoration: none;">contact@arisestudio.com</a>.
               </p>
-              <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+              <p style="margin: 0; font-size: 10.5px; color: #94a3b8;">
                 © ${new Date().getFullYear()} AriseStudio · Architecture & Cloud Engineering
               </p>
             </td>
