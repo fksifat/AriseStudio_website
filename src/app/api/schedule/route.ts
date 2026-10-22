@@ -65,6 +65,37 @@ function generateGoogleCalendarUrl(params: {
   }
 }
 
+async function loadEmailAttachments() {
+  const assets = [
+    { filename: "arise-logo-dark.png", rel: "public/brand/arisestudio-logo-darkmode.png", cid: "arise-logo-dark" },
+    { filename: "arise-logo-light.png", rel: "public/brand/arisestudio-logo.png", cid: "arise-logo-light" },
+    { filename: "video-meet.png", rel: "public/email-icons/video-meet.png", cid: "icon-video" },
+    { filename: "calendar.png", rel: "public/email-icons/calendar.png", cid: "icon-calendar" },
+    { filename: "globe.png", rel: "public/email-icons/globe.png", cid: "icon-globe" },
+    { filename: "check-circle.png", rel: "public/email-icons/check-circle.png", cid: "icon-check" },
+    { filename: "calendar-btn.png", rel: "public/email-icons/calendar-btn.png", cid: "icon-calendar-btn" },
+    { filename: "calendar-btn-dark.png", rel: "public/email-icons/calendar-btn-dark.png", cid: "icon-calendar-btn-dark" },
+  ];
+
+  const attachments: { filename: string; content: Buffer; cid: string }[] = [];
+
+  for (const asset of assets) {
+    try {
+      const fullPath = path.join(process.cwd(), asset.rel);
+      const content = await fs.readFile(fullPath);
+      attachments.push({
+        filename: asset.filename,
+        content,
+        cid: asset.cid,
+      });
+    } catch (err) {
+      console.warn(`[Email Attachment]: Could not read ${asset.rel}`, err);
+    }
+  }
+
+  return attachments;
+}
+
 // shortcut: local JSONL fallback; upgrade to PostgreSQL/Supabase when scaling to multi-region serverless
 async function persistSubmission(filename: string, data: Record<string, unknown>) {
   const line = JSON.stringify(data) + "\n";
@@ -273,105 +304,188 @@ export async function POST(req: Request) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Appointment Confirmation · AriseStudio</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    /* Dark Mode (Default / Base) */
+    @media (prefers-color-scheme: dark) {
+      .body-bg { background-color: #030712 !important; }
+      .card-bg { background-color: #0b0f19 !important; border-color: #1e293b !important; }
+      .header-bg { background-color: #0b0f19 !important; border-color: #1e293b !important; }
+      .highlight-box { background-color: #111827 !important; border-color: #1f2937 !important; }
+      .border-inner { border-color: #1f2937 !important; }
+      .footer-bg { background-color: #080c16 !important; border-color: #1e293b !important; }
+      .text-title { color: #ffffff !important; }
+      .text-sub { color: #94a3b8 !important; }
+      .text-body { color: #cbd5e1 !important; }
+      .text-strong { color: #f8fafc !important; }
+      .text-muted { color: #64748b !important; }
+      .border-divider { border-color: #1e293b !important; }
+      .badge-box { background-color: rgba(16, 185, 129, 0.12) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #34d399 !important; }
+      .gcal-btn { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+      .logo-dark-wrapper { display: block !important; }
+      .logo-light-wrapper { display: none !important; }
+      .gcal-icon-dark { display: inline-block !important; }
+      .gcal-icon-light { display: none !important; }
+    }
+    /* Light Mode */
+    @media (prefers-color-scheme: light) {
+      .body-bg { background-color: #f1f5f9 !important; }
+      .card-bg { background-color: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important; }
+      .header-bg { background-color: #ffffff !important; border-color: #f1f5f9 !important; }
+      .highlight-box { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+      .border-inner { border-color: #e2e8f0 !important; }
+      .footer-bg { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+      .text-title { color: #0f172a !important; }
+      .text-sub { color: #475569 !important; }
+      .text-body { color: #334155 !important; }
+      .text-strong { color: #0f172a !important; }
+      .text-muted { color: #64748b !important; }
+      .border-divider { border-color: #e2e8f0 !important; }
+      .badge-box { background-color: #ecfdf5 !important; border-color: #a7f3d0 !important; color: #059669 !important; }
+      .gcal-btn { background-color: #f8fafc !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
+      .logo-dark-wrapper { display: none !important; }
+      .logo-light-wrapper { display: block !important; }
+      .gcal-icon-dark { display: none !important; }
+      .gcal-icon-light { display: inline-block !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f8fafc;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #030712; padding: 32px 16px;">
+<body class="body-bg" style="margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="body-bg" style="background-color: #030712; padding: 36px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);">
-          <!-- Brand Header -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card-bg" style="max-width: 560px; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);">
+          
+          <!-- Brand Logo Header (Centered) -->
           <tr>
-            <td style="padding: 24px 32px; background-color: #0e1526; border-bottom: 1px solid #1e293b;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; vertical-align: middle; margin-right: 8px;"></span>
-                    <span style="color: #ffffff; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">ARISE STUDIO</span>
-                  </td>
-                  <td align="right">
-                    <span style="color: #64748b; font-size: 12px; font-family: monospace;">Discovery Call</span>
-                  </td>
-                </tr>
-              </table>
+            <td class="header-bg" align="center" style="padding: 32px 24px 24px 24px; background-color: #0b0f19; border-bottom: 1px solid #1e293b; text-align: center;">
+              <!-- Dark Mode Logo -->
+              <div class="logo-dark-wrapper" style="display: block; text-align: center;">
+                <img src="cid:arise-logo-dark" alt="AriseStudio" width="170" height="51" style="display: block; margin: 0 auto; width: 170px; max-width: 170px; height: auto; border: 0;" />
+              </div>
+              <!-- Light Mode Logo -->
+              <!--[if !mso]><!-->
+              <div class="logo-light-wrapper" style="display: none; text-align: center;">
+                <img src="cid:arise-logo-light" alt="AriseStudio" width="170" height="51" style="display: block; margin: 0 auto; width: 170px; max-width: 170px; height: auto; border: 0;" />
+              </div>
+              <!--<![endif]-->
             </td>
           </tr>
 
           <!-- Main Body -->
           <tr>
-            <td style="padding: 32px;">
-              <!-- Status Pill -->
-              <div style="display: inline-block; padding: 4px 12px; background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; color: #34d399; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;">
-                ✓ 30-Minute Consultation Confirmed
+            <td style="padding: 32px 32px 28px 32px;">
+              <!-- Status Pill (with clean vector checkmark icon) -->
+              <div class="badge-box" style="display: inline-block; padding: 5px 12px; background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; color: #34d399; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;">
+                <img src="cid:icon-check" width="12" height="12" style="vertical-align: -1px; margin-right: 5px; display: inline-block; border: 0;" alt="" />
+                30-Minute Consultation Confirmed
               </div>
 
               <!-- Main Heading -->
-              <h1 style="color: #ffffff; font-size: 22px; font-weight: 700; line-height: 1.3; margin: 0 0 8px 0;">
+              <h1 class="text-title" style="color: #ffffff; font-size: 22px; font-weight: 700; line-height: 1.3; margin: 0 0 8px 0;">
                 30 minutes with AriseStudio
               </h1>
-              <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 0 0 24px 0;">
+              <p class="text-sub" style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 0 0 24px 0;">
                 Hi ${escapeHtml(bookingData.name)}, your discovery session has been scheduled with our Principal Systems Architect. Here are your meeting details:
               </p>
 
               <!-- Session Highlight Card -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; margin-bottom: 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="highlight-box" style="background-color: #111827; border: 1px solid #1f2937; border-radius: 14px; margin-bottom: 26px;">
                 <tr>
                   <td style="padding: 20px;">
-                    <div style="color: #ffffff; font-size: 15px; font-weight: 600; margin-bottom: 4px;">
-                      📅 ${escapeHtml(bookingData.date)} · ${timeRangeStr}
-                    </div>
-                    <div style="color: #94a3b8; font-size: 12px; font-family: monospace; margin-bottom: 14px;">
-                      🌐 ${escapeHtml(bookingData.timezone)}
-                    </div>
-                    <div style="border-top: 1px solid #1f2937; padding-top: 12px; font-size: 13px; color: #cbd5e1;">
-                      <span style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Host</span>
-                      <strong style="color: #f1f5f9;">Farhan Kabir Sifat</strong> &nbsp;·&nbsp; <span style="color: #94a3b8;">Principal Systems Architect</span>
+                    <!-- Date & Time Row with crisp Calendar icon -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+                      <tr>
+                        <td width="24" valign="middle" style="vertical-align: middle; padding-right: 10px;">
+                          <img src="cid:icon-calendar" width="16" height="16" style="display: block; width: 16px; height: 16px; border: 0;" alt="" />
+                        </td>
+                        <td valign="middle" style="vertical-align: middle;">
+                          <span class="text-strong" style="color: #ffffff; font-size: 15px; font-weight: 600;">
+                            ${escapeHtml(bookingData.date)} &nbsp;·&nbsp; ${timeRangeStr}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Timezone Row with crisp Globe icon -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 14px;">
+                      <tr>
+                        <td width="24" valign="middle" style="vertical-align: middle; padding-right: 10px;">
+                          <img src="cid:icon-globe" width="16" height="16" style="display: block; width: 16px; height: 16px; border: 0;" alt="" />
+                        </td>
+                        <td valign="middle" style="vertical-align: middle;">
+                          <span class="text-muted" style="color: #94a3b8; font-size: 12px; font-family: monospace;">
+                            ${escapeHtml(bookingData.timezone)}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Host Row -->
+                    <div class="border-inner" style="border-top: 1px solid #1f2937; padding-top: 12px; font-size: 13px;">
+                      <span class="text-muted" style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Host</span>
+                      <strong class="text-strong" style="color: #f1f5f9;">Farhan Kabir Sifat</strong> &nbsp;·&nbsp; <span class="text-sub" style="color: #94a3b8;">Principal Systems Architect</span>
                     </div>
                   </td>
                 </tr>
               </table>
 
               <!-- Google Meet CTA Box -->
-              <div style="text-align: center; margin: 28px 0 20px 0;">
-                <a href="${encodeURI(googleMeetUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; background-color: #10b981; color: #021a12; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 20px; border-radius: 10px; letter-spacing: 0.02em;">
-                  📹 &nbsp; Join with Google Meet
+              <div style="text-align: center; margin: 26px 0 20px 0;">
+                <a href="${encodeURI(googleMeetUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; background-color: #10b981; color: #022c22; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 20px; border-radius: 11px; letter-spacing: 0.01em;">
+                  <img src="cid:icon-video" width="17" height="17" style="vertical-align: -3px; display: inline-block; margin-right: 8px; border: 0;" alt="" />
+                  Join with Google Meet
                 </a>
-                <p style="margin: 10px 0 0 0; font-size: 12px; color: #94a3b8; word-break: break-all;">
-                  Direct link: <a href="${encodeURI(googleMeetUrl)}" style="color: #38bdf8; text-decoration: underline;">${escapeHtml(googleMeetUrl)}</a>
+                <p class="text-muted" style="margin: 10px 0 0 0; font-size: 12px; color: #94a3b8; word-break: break-all; text-align: center;">
+                  Direct link: <a href="${encodeURI(googleMeetUrl)}" style="color: #0284c7; text-decoration: underline;">${escapeHtml(googleMeetUrl)}</a>
                 </p>
-                <div style="margin-top: 16px;">
-                  <a href="${gCalUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #e2e8f0; background-color: #1e293b; border: 1px solid #334155; font-size: 13px; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 8px;">
-                    📅 &nbsp; Add to Google Calendar
+                <div style="margin-top: 16px; text-align: center;">
+                  <a href="${gCalUrl}" target="_blank" rel="noopener noreferrer" class="gcal-btn" style="display: inline-block; color: #e2e8f0; background-color: #1e293b; border: 1px solid #334155; font-size: 13px; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 8px;">
+                    <span class="gcal-icon-dark" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                      <img src="cid:icon-calendar-btn" width="14" height="14" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                    </span>
+                    <!--[if !mso]><!-->
+                    <span class="gcal-icon-light" style="display: none; vertical-align: -2px; margin-right: 6px;">
+                      <img src="cid:icon-calendar-btn-dark" width="14" height="14" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                    </span>
+                    <!--<![endif]-->
+                    Add to Google Calendar
                   </a>
                 </div>
               </div>
 
-              <!-- Attendee Details Table -->
-              <div style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 24px;">
-                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px;">
+              <!-- Reservation Details Table -->
+              <div class="border-divider" style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 24px;">
+                <div class="text-muted" style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px;">
                   Reservation Details
                 </div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
                   <tr>
-                    <td style="padding: 7px 0; color: #94a3b8; width: 120px;">Full Name</td>
-                    <td style="padding: 7px 0; color: #f8fafc; font-weight: 500;">${escapeHtml(bookingData.name)}</td>
+                    <td class="text-muted" style="padding: 7px 0; color: #94a3b8; width: 120px;">Full Name</td>
+                    <td class="text-strong" style="padding: 7px 0; color: #f8fafc; font-weight: 500;">${escapeHtml(bookingData.name)}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 7px 0; color: #94a3b8;">Email Address</td>
-                    <td style="padding: 7px 0; color: #f8fafc; font-weight: 500;">
-                      <a href="mailto:${encodeURIComponent(bookingData.email)}" style="color: #38bdf8; text-decoration: none;">${escapeHtml(bookingData.email)}</a>
+                    <td class="text-muted" style="padding: 7px 0; color: #94a3b8;">Email Address</td>
+                    <td style="padding: 7px 0; font-weight: 500;">
+                      <a href="mailto:${encodeURIComponent(bookingData.email)}" style="color: #0284c7; text-decoration: none;">${escapeHtml(bookingData.email)}</a>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 7px 0; color: #94a3b8;">Phone Number</td>
-                    <td style="padding: 7px 0; color: #f8fafc; font-weight: 500;">
-                      <a href="tel:${escapeHtml(bookingData.phone)}" style="color: #38bdf8; text-decoration: none;">${escapeHtml(bookingData.phone)}</a>
+                    <td class="text-muted" style="padding: 7px 0; color: #94a3b8;">Phone Number</td>
+                    <td style="padding: 7px 0; font-weight: 500;">
+                      <a href="tel:${escapeHtml(bookingData.phone)}" style="color: #0284c7; text-decoration: none;">${escapeHtml(bookingData.phone)}</a>
                     </td>
                   </tr>
                   ${hasNotes ? `
                   <tr>
-                    <td style="padding: 7px 0; color: #94a3b8; vertical-align: top;">Notes</td>
-                    <td style="padding: 7px 0; color: #cbd5e1; font-weight: 400; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(bookingData.notes)}</td>
+                    <td class="text-muted" style="padding: 7px 0; color: #94a3b8; vertical-align: top;">Notes</td>
+                    <td class="text-body" style="padding: 7px 0; color: #cbd5e1; font-weight: 400; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(bookingData.notes)}</td>
                   </tr>
                   ` : ""}
                 </table>
@@ -381,9 +495,9 @@ export async function POST(req: Request) {
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #080c16; border-top: 1px solid #1e293b; padding: 20px 32px; text-align: center;">
-              <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
-                Need to reschedule or update details? Simply reply directly to this email or reach us at <a href="mailto:contact@arisestudio.com" style="color: #38bdf8; text-decoration: none;">contact@arisestudio.com</a>.
+            <td class="footer-bg" style="background-color: #080c16; border-top: 1px solid #1e293b; padding: 20px 32px; text-align: center;">
+              <p class="text-muted" style="margin: 0 0 6px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                Need to reschedule or update details? Simply reply directly to this email or reach us at <a href="mailto:contact@arisestudio.com" style="color: #0284c7; text-decoration: none;">contact@arisestudio.com</a>.
               </p>
               <p style="margin: 0; font-size: 11px; color: #475569;">
                 © ${new Date().getFullYear()} AriseStudio · Architecture & Cloud Engineering
@@ -398,12 +512,15 @@ export async function POST(req: Request) {
 </html>
         `;
 
+        const emailAttachments = await loadEmailAttachments();
+
         await transporter.sendMail({
           from: `"AriseStudio Schedule" <${smtpUser}>`,
           to: recipient,
           replyTo: bookingData.email,
           subject: `[New Appointment] 30m with ${bookingData.name.replace(/[\r\n]/g, " ")} - ${bookingData.date} (${timeRangeStr})`,
           html: htmlContent,
+          attachments: emailAttachments,
         });
 
         // Also send confirmation copy to the client
@@ -412,6 +529,7 @@ export async function POST(req: Request) {
           to: bookingData.email,
           subject: `Confirmed: 30 minutes with AriseStudio on ${bookingData.date} (${timeRangeStr})`,
           html: htmlContent,
+          attachments: emailAttachments,
         });
 
         emailSent = true;
