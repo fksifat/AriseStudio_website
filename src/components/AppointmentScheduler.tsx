@@ -393,7 +393,7 @@ export default function AppointmentScheduler() {
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
-    <div className="w-full max-w-7xl xl:max-w-[1360px] mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 lg:p-7 relative">
+    <div className="w-full max-w-6xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-5 sm:p-7 relative">
       {/* Sleek Integrated Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
         {/* Host Info */}
@@ -453,15 +453,15 @@ export default function AppointmentScheduler() {
       </div>
 
       {!isClient || !currentDate || scheduleDays.length === 0 ? (
-        <div className="w-full rounded-2xl bg-slate-900/30 border border-white/[0.06] p-12 text-center flex items-center justify-center gap-2 text-slate-400">
+        <div className="w-full py-16 sm:py-20 text-center flex items-center justify-center gap-2 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
           <span className="text-sm font-mono">
             Loading available appointment dates...
           </span>
         </div>
       ) : status === "confirmed" && confirmedBooking ? (
-        /* Confirmed Success Card */
-        <div className="rounded-3xl bg-[#09101d] border border-emerald-500/40 p-8 sm:p-12 text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        /* Confirmed Success View (No inner nested card) */
+        <div className="py-6 sm:py-10 text-center relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-6 shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="w-8 h-8" />
           </div>
@@ -551,9 +551,9 @@ export default function AppointmentScheduler() {
             </span>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-7 items-start">
             {/* Left Mini Calendar - Clean & Borderless (No inner card) */}
-            <div className="w-full lg:w-[260px] shrink-0 space-y-4 pb-6 lg:pb-0 border-b lg:border-b-0 lg:border-r border-white/[0.06] lg:pr-6">
+            <div className="w-full lg:w-[245px] shrink-0 space-y-4 pb-6 lg:pb-0 border-b lg:border-b-0 lg:border-r border-white/[0.06] lg:pr-6">
               <div className="flex items-center justify-between pb-2">
                 <span className="text-sm font-bold text-white font-mono">
                   {monthHeader}
