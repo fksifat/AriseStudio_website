@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Lock,
 } from "lucide-react";
 
 interface DaySchedule {
@@ -789,10 +790,8 @@ export default function AppointmentScheduler() {
                   <span>Fridays reserved for maintenance</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                    <span className="w-2 h-[1px] bg-slate-400 transform -rotate-45" />
-                  </span>
-                  <span>Crossed-out slots are already booked</span>
+                  <Lock className="w-3 h-3 text-slate-500 shrink-0" />
+                  <span>Locked slots are already booked</span>
                 </div>
               </div>
             </div>
@@ -842,20 +841,23 @@ export default function AppointmentScheduler() {
                               type="button"
                               disabled={isBooked}
                               onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
-                              className={`w-full py-2 px-1 text-center rounded-xl sm:rounded-full text-xs font-mono font-medium transition-all duration-150 border ${
+                              className={`w-full py-2 px-1 text-center rounded-xl sm:rounded-full text-xs font-mono font-medium transition-all duration-150 border flex items-center justify-center gap-1.5 whitespace-nowrap ${
                                 isBooked
-                                  ? "bg-slate-950/60 text-slate-500/60 border-slate-800/40 opacity-40 line-through select-none cursor-not-allowed disabled:cursor-not-allowed hover:border-slate-800/40 hover:bg-slate-950/60"
+                                  ? "bg-slate-950/50 text-slate-500 border-slate-800/60 select-none cursor-not-allowed disabled:cursor-not-allowed hover:border-slate-800/60 hover:bg-slate-950/50"
                                   : isPicked
                                     ? "bg-emerald-400 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/30 cursor-pointer"
                                     : "bg-slate-900/90 text-slate-200 border-slate-800 hover:border-emerald-500/50 hover:bg-[#004157]/40 hover:text-white cursor-pointer"
                               }`}
                               title={
                                 isBooked
-                                  ? `${slot} (Booked - Not Available)`
+                                  ? `${slot} (Booked — Reserved)`
                                   : `Select ${slot}`
                               }
                             >
-                              {slot}
+                              {isBooked && (
+                                <Lock className="w-3 h-3 text-slate-500/80 shrink-0" />
+                              )}
+                              <span>{slot}</span>
                             </button>
                           );
                         })
