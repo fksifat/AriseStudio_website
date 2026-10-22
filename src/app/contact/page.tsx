@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { 
   Mail, 
@@ -338,14 +339,12 @@ export default function ContactPage() {
               <p className="text-xs text-slate-300">Pick an open slot on our Google Meet scheduler.</p>
             </div>
           </div>
-          <a
-            href={process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL || "https://calendar.app.google/MyNMsFKHdnP1fgTL6"}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/schedule"
             className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shrink-0 shadow-md shadow-emerald-500/20"
           >
             Schedule a Call
-          </a>
+          </Link>
         </div>
       </div>
 
