@@ -40,7 +40,7 @@ const defaultSlotsByWeekday: Record<number, string[]> = {
   6: ["11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Saturday (9:00am removed)
 };
 
-const dayShortNames = ["SUN", "M", "TUE", "WED", "THU", "FRI", "SAT"];
+const dayShortNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const dayFullNames = [
   "Sunday",
   "Monday",
@@ -393,7 +393,7 @@ export default function AppointmentScheduler() {
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
   return (
-    <div className="w-full max-w-6xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 relative">
+    <div className="w-full max-w-7xl xl:max-w-[1360px] mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-4 sm:p-6 lg:p-7 relative">
       {/* Sleek Integrated Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
         {/* Host Info */}
@@ -551,9 +551,9 @@ export default function AppointmentScheduler() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Mini Calendar Widget */}
-            <div className="lg:col-span-4 p-5 rounded-2xl bg-slate-900/60 border border-white/[0.06] space-y-4">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            {/* Left Mini Calendar - Clean & Borderless (No inner card) */}
+            <div className="w-full lg:w-[260px] shrink-0 space-y-4 pb-6 lg:pb-0 border-b lg:border-b-0 lg:border-r border-white/[0.06] lg:pr-6">
               <div className="flex items-center justify-between pb-2">
                 <span className="text-sm font-bold text-white font-mono">
                   {monthHeader}
@@ -591,7 +591,7 @@ export default function AppointmentScheduler() {
               </div>
 
               {/* Calendar Days Matrix */}
-              <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-mono">
+              <div className="grid grid-cols-7 gap-1 text-center text-xs font-mono">
                 {/* Preceding days from previous month */}
                 {Array.from(
                   {
@@ -610,7 +610,10 @@ export default function AppointmentScheduler() {
                     ).getDay();
                     const dayNum = prevMonthDays - firstDay + 1 + i;
                     return (
-                      <span key={`prev-${i}`} className="p-2 text-slate-700">
+                      <span
+                        key={`prev-${i}`}
+                        className="w-7 h-7 mx-auto flex items-center justify-center text-slate-700"
+                      >
                         {dayNum}
                       </span>
                     );
@@ -656,7 +659,7 @@ export default function AppointmentScheduler() {
                       return (
                         <span
                           key={dayNum}
-                          className="p-2 text-slate-700 cursor-not-allowed"
+                          className="w-7 h-7 mx-auto flex items-center justify-center text-slate-700 cursor-not-allowed"
                         >
                           {dayNum}
                         </span>
@@ -675,7 +678,7 @@ export default function AppointmentScheduler() {
                             handleCalendarDayClick(dayNum, viewMonth, viewYear);
                           }
                         }}
-                        className={`p-2 rounded-full font-bold transition-all ${
+                        className={`w-7 h-7 mx-auto flex items-center justify-center rounded-full font-bold transition-all ${
                           isSelected
                             ? "bg-emerald-500 text-slate-950 ring-2 ring-emerald-400 shadow-md scale-105"
                             : isSchedDay
@@ -716,7 +719,7 @@ export default function AppointmentScheduler() {
             </div>
 
             {/* Right Days & Pill Slot Columns */}
-            <div className="lg:col-span-8 overflow-x-auto lg:overflow-x-visible pb-2">
+            <div className="flex-1 w-full min-w-0 overflow-x-auto lg:overflow-x-visible pb-2">
               <div className="min-w-[560px] lg:min-w-0">
                 {/* Columns Header with Week Navigation Arrows */}
                 <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.04]">
@@ -752,7 +755,7 @@ export default function AppointmentScheduler() {
                 </div>
 
                 {/* Day Headers Row */}
-                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pb-4 text-center">
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 pb-4 text-center">
                   {scheduleDays.map((day, idx) => {
                     const isSelected = selectedDayIndex === idx;
                     return (
@@ -779,7 +782,7 @@ export default function AppointmentScheduler() {
                 </div>
 
                 {/* Slots Columns */}
-                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pt-2 items-start">
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 pt-2 items-start">
                   {scheduleDays.map((day, dIdx) => (
                     <div key={day.dateNumber} className="space-y-2">
                       {day.slots.length > 0 ? (
@@ -793,7 +796,7 @@ export default function AppointmentScheduler() {
                               type="button"
                               disabled={isBooked}
                               onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
-                              className={`w-full py-2 px-0.5 sm:px-1 text-center rounded-xl sm:rounded-full text-[11px] sm:text-xs font-mono font-medium transition-all duration-150 border ${
+                              className={`w-full py-2 px-1 text-center rounded-xl sm:rounded-full text-xs font-mono font-medium transition-all duration-150 border ${
                                 isBooked
                                   ? "bg-slate-950/60 text-slate-500/70 border-slate-800/40 cursor-not-allowed line-through opacity-50 select-none hover:border-slate-800/40 hover:bg-slate-950/60"
                                   : isPicked
