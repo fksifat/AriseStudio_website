@@ -891,12 +891,19 @@ export default function AppointmentScheduler() {
                     {activeDay ? activeDay.fullDate.replace(/,\s*\d{4}$/, "") : ""} · {formattedSlotRange}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-                  <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span>
-                    {selectedTimezone.includes("Bangladesh")
-                      ? "(GMT+06:00) Bangladesh Standard Time"
-                      : selectedTimezone}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono">
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span>
+                      {selectedTimezone.includes("Bangladesh")
+                        ? "(GMT+06:00) Bangladesh Standard Time"
+                        : selectedTimezone}
+                    </span>
+                  </span>
+                  <span className="text-slate-600">·</span>
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-sans font-medium">
+                    <Video className="w-3.5 h-3.5 shrink-0" />
+                    <span>Google Meet</span>
                   </span>
                 </div>
               </div>
@@ -967,17 +974,7 @@ export default function AppointmentScheduler() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Meeting Location / Google Meet
-                </label>
-                <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
-                  <Video className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Google Meet video conference link will be attached to your calendar invite</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Project Notes or Custom Meeting Link (Optional)
+                  Project Notes (Optional)
                 </label>
                 <input
                   type="text"
@@ -985,8 +982,8 @@ export default function AppointmentScheduler() {
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Add notes, questions, or your preferred Zoom link..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
+                  placeholder="Any specific questions, topics, or custom link..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
                 />
               </div>
 
