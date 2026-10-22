@@ -861,32 +861,38 @@ export default function AppointmentScheduler() {
 
       {/* Confirmation Slide-In Modal / Panel rendered via Portal to escape backdrop-filter */}
       {isBookingOpen && status !== "confirmed" && isClient && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-[#09101d] border border-white/[0.12] p-6 sm:p-8 shadow-2xl relative text-left animate-in zoom-in-95 duration-150">
+        <div 
+          onClick={() => setIsBookingOpen(false)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-[#09101d] border border-white/[0.12] p-5 sm:p-6 shadow-2xl relative text-left animate-in zoom-in-95 duration-150"
+          >
             {/* Header matching Google Calendar style */}
-            <div className="flex items-start justify-between pb-4 border-b border-white/[0.08]">
+            <div className="flex items-start justify-between pb-3 border-b border-white/[0.08]">
               <div className="space-y-1">
-                <h3 className="text-xl font-bold text-white tracking-tight">
+                <h3 className="text-lg font-bold text-white tracking-tight">
                   30 minutes with AriseStudio
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-emerald-400 font-mono font-medium">
-                  <CalendarIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono font-medium">
+                  <CalendarIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>
                     {activeDay ? activeDay.fullDate.replace(/,\s*\d{4}$/, "") : ""} · {formattedSlotRange}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono">
-                  <span className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                  <span className="flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-slate-500 shrink-0" />
                     <span>
                       {selectedTimezone.includes("Bangladesh")
-                        ? "(GMT+06:00) Bangladesh Standard Time"
+                        ? "(GMT+06:00) BST"
                         : selectedTimezone}
                     </span>
                   </span>
                   <span className="text-slate-600">·</span>
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-sans font-medium">
-                    <Video className="w-3.5 h-3.5 shrink-0" />
+                  <span className="flex items-center gap-1 text-emerald-400 font-sans font-medium">
+                    <Video className="w-3 h-3 shrink-0" />
                     <span>Google Meet</span>
                   </span>
                 </div>
@@ -902,14 +908,14 @@ export default function AppointmentScheduler() {
             </div>
 
             {status === "error" && (
-              <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
                 {errorMessage}
               </div>
             )}
 
-            <form onSubmit={handleBookingSubmit} className="mt-5 space-y-4">
+            <form onSubmit={handleBookingSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Full Name <span className="text-emerald-400">*</span>
                 </label>
                 <input
@@ -920,12 +926,12 @@ export default function AppointmentScheduler() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                   placeholder="e.g. Mahir Zaman"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs sm:text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Email Address <span className="text-emerald-400">*</span>
                 </label>
                 <input
@@ -936,12 +942,12 @@ export default function AppointmentScheduler() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   placeholder="mahir@company.com"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs sm:text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Phone Number <span className="text-emerald-400">*</span>
                 </label>
                 <input
@@ -952,12 +958,12 @@ export default function AppointmentScheduler() {
                     setFormData({ ...formData, phone: e.target.value })
                   }
                   placeholder="+880 1700-000000"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs sm:text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Project Notes (Optional)
                 </label>
                 <input
@@ -966,23 +972,16 @@ export default function AppointmentScheduler() {
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Any specific questions, topics, or custom link..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
+                  placeholder="Any questions, topics, or custom link..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs sm:text-sm focus:border-emerald-400 focus:outline-none placeholder:text-slate-500"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsBookingOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={status === "loading"}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
+                  className="w-full py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {status === "loading" ? (
                     <>
