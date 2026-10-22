@@ -241,11 +241,33 @@ export default function AppointmentScheduler() {
   useEffect(() => {
     let isMounted = true;
     async function loadBookedSlots() {
+      let localSlots: string[] = [];
+      try {
+        const cached = localStorage.getItem("arise_booked_slots");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            localSlots = parsed;
+            if (isMounted) {
+              setBookedSlots(parsed);
+            }
+          }
+        }
+      } catch {
+        // ignore localStorage access error
+      }
+
       try {
         const res = await fetch("/api/schedule");
         const data = await res.json();
         if (isMounted && data.success && Array.isArray(data.bookedSlots)) {
-          setBookedSlots(data.bookedSlots);
+          const merged = Array.from(new Set([...localSlots, ...data.bookedSlots]));
+          setBookedSlots(merged);
+          try {
+            localStorage.setItem("arise_booked_slots", JSON.stringify(merged));
+          } catch {
+            // ignore
+          }
         }
       } catch {
         // silently fallback
@@ -329,11 +351,17 @@ export default function AppointmentScheduler() {
         timezone: selectedTimezone,
         meetUrl: data.booking.googleMeetUrl,
       });
-      // Append booked slot so it is immediately rendered as disabled
-      setBookedSlots((prev) => [
-        ...prev,
-        `${activeDay.fullDate.trim()}_${selectedSlot.trim()}`,
-      ]);
+      // Append booked slot so it is immediately rendered as disabled and persisted
+      const newSlotKey = `${activeDay.fullDate.trim()}_${selectedSlot.trim()}`;
+      setBookedSlots((prev) => {
+        const updated = Array.from(new Set([...prev, newSlotKey]));
+        try {
+          localStorage.setItem("arise_booked_slots", JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
       setStatus("confirmed");
     } catch (err) {
       setStatus("error");
