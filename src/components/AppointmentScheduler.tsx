@@ -107,7 +107,6 @@ export default function AppointmentScheduler() {
   const googleEmbedUrl =
     process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL ||
     "https://calendar.google.com/calendar/appointments/schedules/AcZssZ244HcB-cfSw_zVmdDe6x1ILxlP_JLme5txmE7qc5lQzQOAXdvkioFYDi3XkS3tCEAXqpYTZ7oX?gv=true";
-  const meetUrl = process.env.NEXT_PUBLIC_GOOGLE_MEET_URL || "";
 
   const isClient = useIsClient();
   const [viewMode, setViewMode] = useState<"google" | "custom">("google");
@@ -284,59 +283,56 @@ export default function AppointmentScheduler() {
     : "";
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      {/* Host Details Header */}
-      <div className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/[0.08]">
-        <div className="flex items-center gap-4">
-          <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-400 bg-gradient-to-tr from-[#004157] to-[#0a814f] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/20 shrink-0">
-            <span className="font-mono text-emerald-300">FS</span>
+    <div className="w-full max-w-5xl mx-auto rounded-3xl bg-[#09101d]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl p-3 sm:p-5 relative">
+      {/* Sleek Integrated Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-white/[0.06]">
+        {/* Host Info */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#004157] to-[#0a814f] border border-emerald-400/50 flex items-center justify-center text-xs font-mono font-bold text-emerald-300 shrink-0 shadow-sm">
+            FS
           </div>
-          <div>
-            <div className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold mb-0.5">
-              Farhan Kabir Sifat · Principal Systems Architect
+          <div className="leading-tight">
+            <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+              <span>Farhan Kabir Sifat</span>
+              <span className="w-1 h-1 rounded-full bg-emerald-400" />
+              <span className="text-[11px] font-mono text-emerald-400 font-normal">Principal Architect</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>30 minutes with AriseStudio</span>
-            </h2>
-            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-400 mt-1">
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                30 min appointments
-              </span>
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <Video className="w-4 h-4 text-sky-400" />
-                Google Meet link generated automatically
-              </span>
+            <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
+              <Clock className="w-3 h-3 text-emerald-400/80" />
+              <span>30 min</span>
+              <span>•</span>
+              <Video className="w-3 h-3 text-sky-400/80" />
+              <span>Google Meet</span>
             </div>
           </div>
         </div>
 
-        {/* View Switcher & Google Calendar / Meet Links */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Tab Switcher */}
-          <div className="inline-flex p-1 rounded-xl bg-slate-900/90 border border-white/[0.08] shadow-sm">
+        {/* View Switcher & Action */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Tab Pill */}
+          <div className="inline-flex p-0.5 rounded-lg bg-slate-900/90 border border-white/[0.08]">
             <button
               type="button"
               onClick={() => setViewMode("google")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
                 viewMode === "google"
-                  ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20"
+                  ? "bg-emerald-400 text-slate-950 font-semibold shadow-sm"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <CalendarIcon className="w-3.5 h-3.5" />
-              <span>Google Calendar (Live)</span>
+              <CalendarIcon className="w-3 h-3" />
+              <span>Google Calendar</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode("custom")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
                 viewMode === "custom"
-                  ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20"
+                  ? "bg-emerald-400 text-slate-950 font-semibold shadow-sm"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3 h-3" />
               <span>Studio Matrix</span>
             </button>
           </div>
@@ -345,68 +341,32 @@ export default function AppointmentScheduler() {
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/20 text-xs font-medium text-emerald-300 hover:text-white transition-all shadow-sm"
-            title="Open directly in Google Calendar Appointment Schedule"
+            className="p-1.5 rounded-lg bg-slate-900/90 border border-white/[0.08] hover:border-emerald-400/50 text-slate-400 hover:text-white transition-colors"
+            title="Open in external Google Calendar tab"
           >
-            <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Open in New Tab</span>
-            <ExternalLink className="w-3 h-3 text-emerald-400/80" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
-
-          {meetUrl && (
-            <a
-              href={meetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500/10 border border-sky-500/30 hover:border-sky-400 hover:bg-sky-500/20 text-xs font-medium text-sky-300 hover:text-white transition-all shadow-sm"
-              title="Join AriseStudio Google Meet Room"
-            >
-              <Video className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline">Meet Room</span>
-              <ExternalLink className="w-3 h-3 text-sky-400/80" />
-            </a>
-          )}
         </div>
       </div>
 
       {viewMode === "google" ? (
         /* Embedded Google Calendar Appointment Schedule (Direct on-site) */
-        <div className="rounded-3xl bg-[#09101d] border border-white/[0.08] shadow-2xl p-3 sm:p-5 relative overflow-hidden">
-          <div className="relative w-full rounded-2xl overflow-hidden bg-white border border-slate-700/60 shadow-inner">
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-300 gap-3 z-10 min-h-[500px]">
-                <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-                <span className="text-xs font-mono text-emerald-400">
-                  Loading AriseStudio Google Calendar...
-                </span>
-              </div>
-            )}
-            <iframe
-              src={googleEmbedUrl}
-              onLoad={() => setIframeLoaded(true)}
-              className="w-full h-[760px] sm:h-[840px] border-0 bg-white"
-              title="30 minutes with AriseStudio - Google Calendar Appointment Schedule"
-              allow="camera; microphone; fullscreen; clipboard-write"
-            />
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 px-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono text-slate-300">
-                Official Google Calendar Schedule · Interactive real-time slot selection & instant Google Meet invite
+        <div className="relative w-full rounded-2xl overflow-hidden bg-white border border-slate-700/50 shadow-inner">
+          {!iframeLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-300 gap-2 z-10 min-h-[480px]">
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+              <span className="text-xs font-mono text-emerald-400">
+                Loading Google Calendar...
               </span>
             </div>
-            <a
-              href={calendarUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline transition-colors font-medium shrink-0"
-            >
-              <span>Full Screen Window</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
+          )}
+          <iframe
+            src={googleEmbedUrl}
+            onLoad={() => setIframeLoaded(true)}
+            className="w-full h-[620px] sm:h-[680px] border-0 bg-white"
+            title="30 minutes with AriseStudio - Google Calendar Appointment Schedule"
+            allow="camera; microphone; fullscreen; clipboard-write"
+          />
         </div>
       ) : (
         /* Custom Studio Matrix */
