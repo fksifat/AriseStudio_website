@@ -37,7 +37,7 @@ const defaultSlotsByWeekday: Record<number, string[]> = {
   3: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Wednesday
   4: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Thursday
   5: [], // Friday: Studio Closed / Maintenance
-  6: ["11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Saturday (9:00am removed)
+  6: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Saturday
 };
 
 const dayShortNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -798,7 +798,7 @@ export default function AppointmentScheduler() {
                               onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
                               className={`w-full py-2 px-1 text-center rounded-xl sm:rounded-full text-xs font-mono font-medium transition-all duration-150 border ${
                                 isBooked
-                                  ? "bg-slate-950/60 text-slate-500/70 border-slate-800/40 cursor-not-allowed line-through opacity-50 select-none hover:border-slate-800/40 hover:bg-slate-950/60"
+                                  ? "bg-slate-950/60 text-slate-500/60 border-slate-800/40 opacity-40 line-through select-none cursor-not-allowed disabled:cursor-not-allowed hover:border-slate-800/40 hover:bg-slate-950/60"
                                   : isPicked
                                     ? "bg-emerald-400 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/30 cursor-pointer"
                                     : "bg-slate-900/90 text-slate-200 border-slate-800 hover:border-emerald-500/50 hover:bg-[#004157]/40 hover:text-white cursor-pointer"

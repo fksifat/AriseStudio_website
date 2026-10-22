@@ -228,8 +228,18 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), "data", "bookings.jsonl");
-    const content = await fs.readFile(filePath, "utf8");
+    const primaryPath = path.join(process.cwd(), "data", "bookings.jsonl");
+    const tmpPath = path.join("/tmp", "bookings.jsonl");
+    let content = "";
+    try {
+      content = await fs.readFile(primaryPath, "utf8");
+    } catch {
+      try {
+        content = await fs.readFile(tmpPath, "utf8");
+      } catch {
+        content = "";
+      }
+    }
     const lines = content.trim().split("\n").filter(Boolean);
     const bookedSlots: string[] = [];
     for (const line of lines) {
