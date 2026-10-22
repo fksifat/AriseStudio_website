@@ -360,11 +360,9 @@ export default function AppointmentScheduler() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          company: "Not provided",
           date: activeDay.fullDate,
           timeSlot: selectedSlot,
           timezone: selectedTimezone,
-          service: "30-Min Architecture Discovery Call",
           notes: formData.notes,
         }),
       });
@@ -423,7 +421,7 @@ export default function AppointmentScheduler() {
         if (!isPM && hours === 12) hours = 0;
 
         const d = new Date(confirmedBooking.date);
-        const tzMatch = confirmedBooking.timezone.match(/UTC([+-]\d+)/i);
+        const tzMatch = confirmedBooking.timezone.match(/(?:GMT|UTC)\s*([+-]\d+)/i);
         let utcTimestamp: number;
         if (tzMatch) {
           const offsetHours = parseInt(tzMatch[1], 10);
