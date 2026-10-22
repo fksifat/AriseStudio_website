@@ -104,10 +104,6 @@ const timezones = [
 ];
 
 export default function AppointmentScheduler() {
-  const calendarUrl =
-    process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL ||
-    "https://calendar.app.google/KKL4cx7gWejtrZtj9";
-
   const isClient = useIsClient();
   const currentDate = useMemo(() => (isClient ? new Date() : null), [isClient]);
   const [scheduleRefDate, setScheduleRefDate] = useState<Date | null>(null);
@@ -494,18 +490,6 @@ export default function AppointmentScheduler() {
               ))}
             </select>
           </div>
-
-          <a
-            href={calendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/20 text-xs font-medium text-emerald-300 hover:text-white transition-all shadow-sm"
-            title="Open full Google Calendar in new tab"
-          >
-            <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-mono hidden sm:inline">Open Calendar</span>
-            <ExternalLink className="w-3 h-3 text-emerald-400/80" />
-          </a>
         </div>
       </div>
 
