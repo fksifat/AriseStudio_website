@@ -155,18 +155,20 @@ export default function AppointmentScheduler() {
     if (isPrevMonthDisabled) return;
     if (viewMonth === 0) {
       setViewMonthState(11);
-      setViewYearState((y) => (y !== null ? y - 1 : 2025));
+      setViewYearState(viewYear - 1);
     } else {
-      setViewMonthState((m) => (m !== null ? m - 1 : 0));
+      setViewMonthState(viewMonth - 1);
+      setViewYearState(viewYear);
     }
   };
 
   const handleNextMonth = () => {
     if (viewMonth === 11) {
       setViewMonthState(0);
-      setViewYearState((y) => (y !== null ? y + 1 : 2027));
+      setViewYearState(viewYear + 1);
     } else {
-      setViewMonthState((m) => (m !== null ? m + 1 : 1));
+      setViewMonthState(viewMonth + 1);
+      setViewYearState(viewYear);
     }
   };
 
