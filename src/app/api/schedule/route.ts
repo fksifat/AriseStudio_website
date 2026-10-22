@@ -43,7 +43,7 @@ function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, company, date, timeSlot, timezone, service, notes } = body;
+    const { name, email, phone, company, date, timeSlot, timezone, service, notes } = body;
 
     // Validation
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -55,7 +55,14 @@ export async function POST(req: Request) {
 
     if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
-        { success: false, error: "A valid corporate email is required." },
+        { success: false, error: "A valid email address is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!phone || typeof phone !== "string" || !phone.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Phone number is required." },
         { status: 400 }
       );
     }
@@ -118,6 +125,7 @@ export async function POST(req: Request) {
     const bookingData = {
       name: name.trim(),
       email: email.trim(),
+      phone: phone.trim(),
       company: (company || "Not provided").trim(),
       date,
       timeSlot,
@@ -137,11 +145,12 @@ export async function POST(req: Request) {
         await initTursoSchema();
         await turso.execute({
           sql: `
-            INSERT INTO bookings (date, timeSlot, name, email, company, timezone, service, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO bookings (date, timeSlot, name, email, phone, company, timezone, service, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(date, timeSlot) DO UPDATE SET
               name = excluded.name,
               email = excluded.email,
+              phone = excluded.phone,
               company = excluded.company,
               notes = excluded.notes;
           `,
@@ -150,6 +159,7 @@ export async function POST(req: Request) {
             bookingData.timeSlot,
             bookingData.name,
             bookingData.email,
+            bookingData.phone,
             bookingData.company || "",
             bookingData.timezone || "",
             bookingData.service || "",
@@ -203,6 +213,10 @@ export async function POST(req: Request) {
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Corporate Email:</td>
                 <td style="padding: 10px; color: #ffffff;"><a href="mailto:${encodeURIComponent(bookingData.email)}" style="color: #38bdf8;">${escapeHtml(bookingData.email)}</a></td>
+              </tr>
+              <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Phone Number:</td>
+                <td style="padding: 10px; color: #ffffff;"><a href="tel:${escapeHtml(bookingData.phone)}" style="color: #38bdf8;">${escapeHtml(bookingData.phone)}</a></td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 10px; color: #a7f3d0; font-weight: bold;">Company:</td>

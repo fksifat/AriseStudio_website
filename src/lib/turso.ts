@@ -34,6 +34,7 @@ export async function initTursoSchema(): Promise<boolean> {
         timeSlot TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
+        phone TEXT,
         company TEXT,
         timezone TEXT,
         service TEXT,
@@ -42,6 +43,11 @@ export async function initTursoSchema(): Promise<boolean> {
         UNIQUE(date, timeSlot)
       );
     `);
+    try {
+      await turso.execute("ALTER TABLE bookings ADD COLUMN phone TEXT;");
+    } catch {
+      // column already exists
+    }
     schemaInitialized = true;
     return true;
   } catch (err) {
@@ -49,3 +55,4 @@ export async function initTursoSchema(): Promise<boolean> {
     return false;
   }
 }
+

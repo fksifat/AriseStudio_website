@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   Clock,
   Video,
@@ -302,12 +303,38 @@ export default function AppointmentScheduler() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    company: "",
-    service: "E-Commerce Automation Systems",
+    phone: "",
     notes: "",
   });
 
   const activeDay = scheduleDays[selectedDayIndex] || scheduleDays[0];
+
+  const formattedSlotRange = useMemo(() => {
+    if (!selectedSlot) return "";
+    const match = selectedSlot.match(/(\d+):(\d+)(am|pm)/i);
+    if (!match) return selectedSlot;
+    const hour = parseInt(match[1], 10);
+    const min = parseInt(match[2], 10);
+    const meridiem = match[3].toLowerCase();
+
+    let endMin = min + 30;
+    let endHour = hour;
+    let endMeridiem = meridiem;
+
+    if (endMin >= 60) {
+      endMin -= 60;
+      endHour += 1;
+      if (endHour === 12 && meridiem === "am") endMeridiem = "pm";
+      else if (endHour === 12 && meridiem === "pm") endMeridiem = "am";
+      else if (endHour > 12) endHour = 1;
+    }
+
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const startStr = `${hour}:${pad(min)}`;
+    const endStr = `${endHour}:${pad(endMin)}${endMeridiem}`;
+
+    return `${startStr} – ${endStr}`;
+  }, [selectedSlot]);
 
   const handleSlotSelect = (dayIdx: number, slot: string) => {
     const targetDay = scheduleDays[dayIdx];
@@ -332,11 +359,12 @@ export default function AppointmentScheduler() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          company: formData.company,
+          phone: formData.phone,
+          company: "Not provided",
           date: activeDay.fullDate,
           timeSlot: selectedSlot,
           timezone: selectedTimezone,
-          service: formData.service,
+          service: "30-Min Architecture Discovery Call",
           notes: formData.notes,
         }),
       });
@@ -379,7 +407,7 @@ export default function AppointmentScheduler() {
       "30 minutes with AriseStudio Architecture Team",
     );
     const details = encodeURIComponent(
-      `Technical Discovery Call with AriseStudio.\nTopic: ${formData.service}\nAttendee: ${formData.name} (${formData.company})${confirmedBooking.meetUrl ? `\nGoogle Meet: ${confirmedBooking.meetUrl}` : ""}`,
+      `Technical Discovery Call with AriseStudio.\nAttendee: ${formData.name} (${formData.phone})\nEmail: ${formData.email}${confirmedBooking.meetUrl ? `\nGoogle Meet: ${confirmedBooking.meetUrl}` : ""}`,
     );
     const location = encodeURIComponent(
       confirmedBooking.meetUrl || "Google Meet (Link in confirmation email)",
@@ -847,25 +875,36 @@ export default function AppointmentScheduler() {
         </div>
       )}
 
-      {/* Confirmation Slide-In Modal / Panel */}
-      {isBookingOpen && status !== "confirmed" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-[#09101d] border border-emerald-500/40 p-6 sm:p-8 shadow-2xl relative text-left">
+      {/* Confirmation Slide-In Modal / Panel rendered via Portal to escape backdrop-filter */}
+      {isBookingOpen && status !== "confirmed" && isClient && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-[#09101d] border border-white/[0.12] p-6 sm:p-8 shadow-2xl relative text-left animate-in zoom-in-95 duration-150">
+            {/* Header matching Google Calendar style */}
             <div className="flex items-start justify-between pb-4 border-b border-white/[0.08]">
-              <div>
-                <span className="text-xs font-mono uppercase text-emerald-400 font-semibold">
-                  Confirm 30-Min Discovery Call
-                </span>
-                <h4 className="text-xl font-bold text-white mt-1">
-                  {activeDay.fullDate}
-                </h4>
-                <p className="text-xs text-emerald-300 font-mono mt-0.5">
-                  ⏰ {selectedSlot} ({selectedTimezone.split(" ")[0]})
-                </p>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  30 minutes with AriseStudio
+                </h3>
+                <div className="flex items-center gap-2 text-sm text-emerald-400 font-mono font-medium">
+                  <CalendarIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    {activeDay ? activeDay.fullDate.replace(/,\s*\d{4}$/, "") : ""} · {formattedSlotRange}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                  <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span>
+                    {selectedTimezone.includes("Bangladesh")
+                      ? "(GMT+06:00) Bangladesh Standard Time"
+                      : selectedTimezone}
+                  </span>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsBookingOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                title="Close"
               >
                 ✕
               </button>
@@ -896,7 +935,7 @@ export default function AppointmentScheduler() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Corporate Email <span className="text-emerald-400">*</span>
+                  Email Address <span className="text-emerald-400">*</span>
                 </label>
                 <input
                   type="email"
@@ -910,64 +949,44 @@ export default function AppointmentScheduler() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Company Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.company}
-                    onChange={(e) =>
-                      setFormData({ ...formData, company: e.target.value })
-                    }
-                    placeholder="e.g. Apex Commerce"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Phone Number <span className="text-emerald-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  placeholder="+880 1700-000000"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Discussion Focus
-                  </label>
-                  <select
-                    value={formData.service}
-                    onChange={(e) =>
-                      setFormData({ ...formData, service: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none cursor-pointer"
-                  >
-                    <option value="E-Commerce Automation Systems">
-                      E-Commerce Automation
-                    </option>
-                    <option value="Custom ERP & CRM Engineering">
-                      Custom ERP & CRM
-                    </option>
-                    <option value="Business Process Automation & RPA">
-                      Business Process RPA
-                    </option>
-                    <option value="24/7 Managed IT Support & DevOps">
-                      24/7 Managed IT Support
-                    </option>
-                    <option value="General Architecture Audit">
-                      General Architecture
-                    </option>
-                  </select>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Meeting Location / Google Meet
+                </label>
+                <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
+                  <Video className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Google Meet video conference link will be attached to your calendar invite</span>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Brief Project Requirements (Optional)
+                  Project Notes or Custom Meeting Link (Optional)
                 </label>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Tell us about the bottleneck you want to solve..."
-                  className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none resize-none"
+                  placeholder="Add notes, questions, or your preferred Zoom link..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:border-emerald-400 focus:outline-none"
                 />
               </div>
 
@@ -987,11 +1006,11 @@ export default function AppointmentScheduler() {
                   {status === "loading" ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Reserving Slot...
+                      <span>Reserving Slot...</span>
                     </>
                   ) : (
                     <>
-                      Confirm 30-Min Call
+                      <span>Confirm 30-Min Call</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
@@ -999,7 +1018,8 @@ export default function AppointmentScheduler() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
