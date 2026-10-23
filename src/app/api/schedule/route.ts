@@ -290,6 +290,7 @@ export async function POST(req: Request) {
     const recipient = cleanEnvValue(process.env.CONTACT_NOTIFICATION_EMAIL) || "contact@arisestudio.com";
 
     let emailSent = false;
+    let mailNotice: string | undefined = undefined;
 
     if (smtpHost && smtpUser && smtpPass) {
       try {
@@ -541,14 +542,18 @@ export async function POST(req: Request) {
 
         emailSent = true;
       } catch (mailError) {
+        mailNotice = mailError instanceof Error ? mailError.message : "SMTP send failed";
         console.error("[Schedule Mail Error]:", mailError);
       }
+    } else {
+      mailNotice = "SMTP credentials not fully configured in environment";
     }
 
     return NextResponse.json({
       success: true,
       message: "Appointment confirmed successfully.",
       emailSent,
+      emailNotice: emailSent ? undefined : mailNotice,
       booking: {
         ...bookingData,
         gcalStatus: generatedMeetUrl ? "created" : "fallback",
