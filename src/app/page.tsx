@@ -185,7 +185,7 @@ export default function HomePage() {
               Under the Hood: High-Resilience Engineering
             </h2>
             <p className="text-slate-400 mt-2 text-sm sm:text-base leading-relaxed">
-              Explore how AriseStudio orchestrates zero-loss data pipelines, distributed mutex locks, and automated courier APIs. Toggle tabs below to inspect execution flows and live payloads.
+              Explore how AriseStudio orchestrates zero-loss data pipelines, distributed mutex locks, and automated courier APIs. Toggle tabs below to inspect sample execution flows and payloads.
             </p>
           </div>
 

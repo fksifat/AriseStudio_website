@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * Google Calendar API & Google Meet Integration
  * Creates official Google Calendar events with automatically generated unique Google Meet rooms.
@@ -8,9 +10,8 @@ interface CreateMeetingParams {
   description: string;
   attendeeName: string;
   attendeeEmail: string;
-  dateStr: string;     // e.g. "Monday, October 26, 2026"
-  timeSlot: string;    // e.g. "10:00am"
-  timezone?: string;   // e.g. "Asia/Dhaka" or "(GMT+06:00) Bangladesh Standard Time"
+  startIso: string;
+  eventId?: string;
 }
 
 interface CalendarEventResult {
@@ -56,6 +57,7 @@ function getEnvFuzzy(targetNames: string[]): string {
 async function getGoogleAccessToken(clientId: string, clientSecret: string, refreshToken: string): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
+    signal: AbortSignal.timeout(10000),
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: clientId,
@@ -72,37 +74,6 @@ async function getGoogleAccessToken(clientId: string, clientSecret: string, refr
   }
 
   return data.access_token;
-}
-
-/**
- * Parses booking date and timeslot into ISO strings for Google Calendar
- */
-function parseBookingToUtcIso(dateStr: string, timeSlot: string): { startIso: string; endIso: string } {
-  const parsedDate = new Date(dateStr);
-  const match = timeSlot.match(/(\d+):(\d+)(am|pm)/i);
-  let startHour = 10;
-  let startMin = 0;
-
-  if (match) {
-    startHour = parseInt(match[1], 10);
-    startMin = parseInt(match[2], 10);
-    const meridiem = match[3].toLowerCase();
-    if (meridiem === "pm" && startHour < 12) startHour += 12;
-    if (meridiem === "am" && startHour === 12) startHour = 0;
-  }
-
-  const year = isNaN(parsedDate.getTime()) ? new Date().getFullYear() : parsedDate.getFullYear();
-  const month = isNaN(parsedDate.getTime()) ? new Date().getMonth() : parsedDate.getMonth();
-  const day = isNaN(parsedDate.getTime()) ? new Date().getDate() : parsedDate.getDate();
-
-  // Bangladesh Time is UTC+6 -> subtract 6 hours for UTC
-  const startUtc = new Date(Date.UTC(year, month, day, startHour - 6, startMin, 0));
-  const endUtc = new Date(startUtc.getTime() + 30 * 60 * 1000);
-
-  return {
-    startIso: startUtc.toISOString(),
-    endIso: endUtc.toISOString(),
-  };
 }
 
 /**
@@ -132,19 +103,21 @@ export async function createGoogleCalendarEvent(params: CreateMeetingParams): Pr
 
   try {
     const accessToken = await getGoogleAccessToken(clientId, clientSecret, refreshToken);
-    const { startIso, endIso } = parseBookingToUtcIso(params.dateStr, params.timeSlot);
+    const startIso = params.startIso;
+    const endIso = new Date(Date.parse(startIso) + 30 * 60000).toISOString();
     const requestId = `arise-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
     const eventPayload = {
+      ...(params.eventId ? { id: params.eventId } : {}),
       summary: params.title,
       description: params.description,
       start: {
         dateTime: startIso,
-        timeZone: "Asia/Dhaka",
+        timeZone: "UTC",
       },
       end: {
         dateTime: endIso,
-        timeZone: "Asia/Dhaka",
+        timeZone: "UTC",
       },
       attendees: [
         { email: params.attendeeEmail, displayName: params.attendeeName },
@@ -213,3 +186,63 @@ export async function createGoogleCalendarEvent(params: CreateMeetingParams): Pr
   }
 }
 
+
+export interface CalendarEvent {
+  id: string;
+  status: string;
+  summary?: string;
+  organizer?: { self?: boolean; email?: string };
+  start?: { dateTime?: string };
+  end?: { dateTime?: string };
+  attendees?: { email?: string }[];
+  recurringEventId?: string;
+}
+
+// Scope sync state to the OAuth connection without requiring any new Google permissions.
+export function googleCalendarConnectionId(): string | null {
+  const clientId = getEnvFuzzy(["GOOGLE_CLIENT_ID", "CLIENT_ID"]);
+  const refresh = getEnvFuzzy(["GOOGLE_REFRESH_TOKEN", "REFRESH_TOKEN"]);
+  return clientId && refresh ? createHash("sha256").update(`${clientId}\n${refresh}`).digest("hex") : null;
+}
+
+// A complete page chain is required: partial/error responses must never release a slot.
+export async function readGoogleCalendarChanges(tokens: Record<string, string>): Promise<{
+  connectionId: string; events: CalendarEvent[]; syncToken: string;
+} | null> {
+  const clientId = getEnvFuzzy(["GOOGLE_CLIENT_ID", "CLIENT_ID"]);
+  const secret = getEnvFuzzy(["GOOGLE_CLIENT_SECRET", "CLIENT_SECRET", "GOOGLE_SECRET", "GOOGLE_CLIENT", "GOCSPX"]);
+  const refresh = getEnvFuzzy(["GOOGLE_REFRESH_TOKEN", "REFRESH_TOKEN"]);
+  if (!clientId || !secret || !refresh) return null;
+  const accessToken = await getGoogleAccessToken(clientId, secret, refresh);
+  const options = { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" as const, signal: AbortSignal.timeout(10000) };
+  const connectionId = googleCalendarConnectionId();
+  if (!connectionId) return null;
+  let syncToken = tokens[connectionId];
+  let pageToken = "";
+  const events: CalendarEvent[] = [];
+  const seenPages = new Set<string>();
+  for (let page = 0; page < 100; page++) {
+    const query = new URLSearchParams({ showDeleted: "true", maxResults: "2500" });
+    if (syncToken) query.set("syncToken", syncToken);
+    if (pageToken) query.set("pageToken", pageToken);
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${query}`, options);
+    if (response.status === 410 && syncToken) {
+      syncToken = ""; pageToken = ""; events.length = 0; seenPages.clear();
+      continue;
+    }
+    if (!response.ok) throw new Error("Calendar changes are unavailable");
+    const data = await response.json();
+    if (data.accessRole !== "owner" || !Array.isArray(data.items) || data.items.some((event: CalendarEvent) => !event || typeof event.id !== "string" || !event.id || !["confirmed", "tentative", "cancelled"].includes(event.status))) {
+      throw new Error("Incomplete organizer Calendar response");
+    }
+    events.push(...data.items);
+    if (data.nextPageToken) {
+      if (typeof data.nextPageToken !== "string" || seenPages.has(data.nextPageToken)) throw new Error("Invalid Calendar pagination");
+      seenPages.add(data.nextPageToken); pageToken = data.nextPageToken;
+    } else {
+      if (typeof data.nextSyncToken !== "string" || !data.nextSyncToken) throw new Error("Calendar sync token is missing");
+      return { connectionId, events, syncToken: data.nextSyncToken };
+    }
+  }
+  throw new Error("Calendar page limit exceeded");
+}

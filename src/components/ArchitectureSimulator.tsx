@@ -163,7 +163,7 @@ export default function ArchitectureSimulator() {
             <span className="w-3 h-3 rounded-full bg-emerald-500" />
           </div>
           <span className="font-mono text-xs text-slate-400 pl-2 border-l border-slate-700">
-            AriseStudio Runtime Architecture Inspector
+            AriseStudio Sample Architecture Explorer
           </span>
         </div>
 
@@ -171,7 +171,7 @@ export default function ArchitectureSimulator() {
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            LIVE TELEMETRY FEED
+            INTERACTIVE DEMO
           </span>
 
           <div className="inline-flex rounded-lg bg-slate-900 p-0.5 border border-slate-800 text-xs font-medium">
@@ -193,7 +193,7 @@ export default function ArchitectureSimulator() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              JSON Stream
+              Sample JSON
             </button>
           </div>
         </div>

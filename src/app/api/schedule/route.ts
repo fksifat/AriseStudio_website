@@ -1,70 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
+import { randomUUID } from "node:crypto";
+import { syncCancelledBookings } from "@/lib/bookingSync";
 import nodemailer from "nodemailer";
-import fs from "fs/promises";
-import path from "path";
-import { getTursoClient, initTursoSchema } from "@/lib/turso";
-import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
+import { getDatabase, legacyBookedSlots, reserveBooking } from "@/lib/turso";
+import { createGoogleCalendarEvent, googleCalendarConnectionId } from "@/lib/googleCalendar";
+import { bookingStartIso, bookingTimezones, HOST_TIMEZONE, formatBookingDate, formatBookingRange, googleCalendarUrl } from "@/lib/booking";
+import { limitSubmission, readSubmission, SubmissionError } from "@/lib/submissions";
 
 const escapeHtml = (str: string) =>
   str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-
-function formatTimeRange(timeSlot: string): string {
-  const match = (timeSlot || "").match(/(\d+):(\d+)(am|pm)/i);
-  if (!match) return timeSlot;
-  const hour = parseInt(match[1], 10);
-  const min = parseInt(match[2], 10);
-  const meridiem = match[3].toLowerCase();
-
-  let endMin = min + 30;
-  let endHour = hour;
-  let endMeridiem = meridiem;
-
-  if (endMin >= 60) {
-    endMin -= 60;
-    endHour += 1;
-    if (endHour === 12 && meridiem === "am") endMeridiem = "pm";
-    else if (endHour === 12 && meridiem === "pm") endMeridiem = "am";
-    else if (endHour > 12) endHour = 1;
-  }
-
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${hour}:${pad(min)} – ${endHour}:${pad(endMin)}${endMeridiem.toUpperCase()}`;
-}
-
-function generateGoogleCalendarUrl(params: {
-  title: string;
-  dateStr: string;
-  timeSlot: string;
-  details: string;
-  location: string;
-}): string {
-  try {
-    const parsedDate = new Date(params.dateStr);
-    if (isNaN(parsedDate.getTime())) {
-      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(params.title)}&details=${encodeURIComponent(params.details)}&location=${encodeURIComponent(params.location)}`;
-    }
-    const match = params.timeSlot.match(/(\d+):(\d+)(am|pm)/i);
-    let startHour = 10;
-    let startMin = 0;
-    if (match) {
-      startHour = parseInt(match[1], 10);
-      startMin = parseInt(match[2], 10);
-      const meridiem = match[3].toLowerCase();
-      if (meridiem === "pm" && startHour < 12) startHour += 12;
-      if (meridiem === "am" && startHour === 12) startHour = 0;
-    }
-    const year = parsedDate.getFullYear();
-    const month = parsedDate.getMonth();
-    const day = parsedDate.getDate();
-    // Default timezone Bangladesh GMT+6 (subtract 6 hours for UTC)
-    const startUtc = new Date(Date.UTC(year, month, day, startHour - 6, startMin, 0));
-    const endUtc = new Date(startUtc.getTime() + 30 * 60 * 1000);
-    const formatUtc = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(params.title)}&dates=${formatUtc(startUtc)}/${formatUtc(endUtc)}&details=${encodeURIComponent(params.details)}&location=${encodeURIComponent(params.location)}`;
-  } catch {
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(params.title)}&details=${encodeURIComponent(params.details)}&location=${encodeURIComponent(params.location)}`;
-  }
-}
 
 const CDN_BASE = "https://raw.githubusercontent.com/fksifat/AriseStudio_website/main";
 const logoLightUrl = `${CDN_BASE}/public/brand/arisestudio-logo.png`;
@@ -75,39 +19,6 @@ const iconGlobeUrl = `${CDN_BASE}/public/email-icons/globe.png`;
 const iconCheckUrl = `${CDN_BASE}/public/email-icons/check-circle.png`;
 const iconCalendarBtnDarkUrl = `${CDN_BASE}/public/email-icons/calendar-btn-dark.png`;
 const iconCalendarBtnLightUrl = `${CDN_BASE}/public/email-icons/calendar-btn.png`;
-
-// shortcut: local JSONL fallback; upgrade to PostgreSQL/Supabase when scaling to multi-region serverless
-async function persistSubmission(filename: string, data: Record<string, unknown>) {
-  const line = JSON.stringify(data) + "\n";
-  try {
-    const dir = path.join(process.cwd(), "data");
-    await fs.mkdir(dir, { recursive: true });
-    await fs.appendFile(path.join(dir, filename), line, "utf8");
-  } catch {
-    try {
-      await fs.appendFile(path.join("/tmp", filename), line, "utf8");
-    } catch (err) {
-      console.error("[Persistence Error]:", err);
-    }
-  }
-}
-
-// shortcut: in-memory map resets on serverless cold starts; upgrade to Upstash Redis for distributed multi-region rate limiting
-const rateLimitMap = new Map<string, number[]>();
-
-function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const timestamps = (rateLimitMap.get(key) || []).filter((time) => now - time < windowMs);
-  if (timestamps.length >= limit) return false;
-  timestamps.push(now);
-  rateLimitMap.set(key, timestamps);
-  if (rateLimitMap.size > 1000) {
-    for (const [k, v] of rateLimitMap.entries()) {
-      if (v.every((t) => now - t > 3600000)) rateLimitMap.delete(k);
-    }
-  }
-  return true;
-}
 
 function cleanEnvValue(value?: string): string {
   if (!value) return "";
@@ -120,89 +31,27 @@ function cleanEnvValue(value?: string): string {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, email, phone, company, date, timeSlot, timezone, service, notes } = body;
+    limitSubmission(req, "schedule");
+    const { name, email, phone, company, date, timeSlot, timezone, service, notes } = await readSubmission(req, {
+      name: { min: 1, max: 120 }, email: { min: 1, max: 254 }, phone: { min: 1, max: 64 },
+      company: { max: 300 }, date: { min: 1, max: 60 }, timeSlot: { min: 1, max: 10 },
+      timezone: { max: 100 }, service: { max: 100 }, notes: { max: 5000 },
+    });
+    const displayTimezone = timezone || HOST_TIMEZONE;
+    if (!bookingTimezones.some(zone => zone.value === displayTimezone)) throw new SubmissionError("Please choose a supported timezone.");
+    const startIso = bookingStartIso(date, timeSlot);
+    if (!startIso || Date.parse(startIso) <= Date.now()) throw new SubmissionError("Please choose a valid future appointment during studio hours.");
+    limitSubmission(req, "schedule", email);
+    await syncCancelledBookings();
+    const eventId = randomUUID().replace(/-/g, "");
+    await reserveBooking({ name, email, phone, company, date, timeSlot, timezone: displayTimezone, service, notes }, { eventId, connectionId: googleCalendarConnectionId() || "" });
 
-    // Validation
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Full name is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { success: false, error: "A valid email address is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!phone || typeof phone !== "string" || !phone.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Phone number is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!date || !timeSlot) {
-      return NextResponse.json(
-        { success: false, error: "Please select an appointment date and time slot." },
-        { status: 400 }
-      );
-    }
-
-    // Check if slot has already been reserved
-    try {
-      const existingFilePath = path.join(process.cwd(), "data", "bookings.jsonl");
-      const existingContent = await fs.readFile(existingFilePath, "utf8");
-      const existingLines = existingContent.trim().split("\n").filter(Boolean);
-      const isAlreadyBooked = existingLines.some((line) => {
-        try {
-          const entry = JSON.parse(line);
-          return (
-            entry.date?.trim().toLowerCase() === String(date).trim().toLowerCase() &&
-            entry.timeSlot?.trim().toLowerCase() === String(timeSlot).trim().toLowerCase()
-          );
-        } catch {
-          return false;
-        }
-      });
-
-      if (isAlreadyBooked) {
-        return NextResponse.json(
-          { success: false, error: "This appointment slot is already reserved. Please choose an open slot." },
-          { status: 409 }
-        );
-      }
-    } catch {
-      // file might not exist yet, continue
-    }
-
-    // Rate limiting: prevent IP flooding and email bombing
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anonymous";
-
-    if (!checkRateLimit(`ip:${clientIp}`, 5, 10 * 60 * 1000)) {
-      return NextResponse.json(
-        { success: false, error: "Too many booking requests from this network. Please wait a few minutes." },
-        { status: 429 }
-      );
-    }
-
-    if (!checkRateLimit(`email:${email.toLowerCase().trim()}`, 2, 60 * 60 * 1000)) {
-      return NextResponse.json(
-        { success: false, error: "Too many bookings requested for this email address. Please check your inbox or try again later." },
-        { status: 429 }
-      );
-    }
-
-    // Meeting URL: check notes, generate unique room via Google Calendar API, or use fallback
-    const notesStr = typeof notes === "string" ? notes.trim() : "";
+    // Only generate provider events after the slot has been durably reserved.
+    const notesStr = notes;
     const extractedMeetingUrl = notesStr.match(/https?:\/\/[^\s]+/)?.[0];
 
     let generatedMeetUrl: string | null = null;
     let calendarEventUrl: string | null = null;
-    let gcalNotice: string | undefined = undefined;
 
     try {
       const gcal = await createGoogleCalendarEvent({
@@ -210,9 +59,8 @@ export async function POST(req: Request) {
         description: `Technical Discovery Consultation with AriseStudio.\n\nAttendee: ${name.trim()} (${phone.trim()})\nEmail: ${email.trim()}${notesStr ? `\nNotes: ${notesStr}` : ""}\n\nHost: Farhan Kabir Sifat (Principal Systems Architect)`,
         attendeeName: name.trim(),
         attendeeEmail: email.trim(),
-        dateStr: date,
-        timeSlot,
-        timezone,
+        startIso,
+        eventId,
       });
 
       if (gcal.success && gcal.meetUrl) {
@@ -220,11 +68,9 @@ export async function POST(req: Request) {
         calendarEventUrl = gcal.calendarEventUrl;
         console.log("[Google Meet Created Successfully]:", generatedMeetUrl);
       } else {
-        gcalNotice = gcal.error;
         console.warn("[Google Calendar Generation Notice]:", gcal.error);
       }
     } catch (gcalErr) {
-      gcalNotice = gcalErr instanceof Error ? gcalErr.message : "Calendar service error";
       console.warn("[Google Calendar Service Notice]:", gcalErr);
     }
 
@@ -237,50 +83,14 @@ export async function POST(req: Request) {
       company: company ? String(company).trim() : "",
       date,
       timeSlot,
-      timezone: timezone || "(GMT+06:00) Bangladesh Standard Time",
+      timezone: displayTimezone,
+      startIso,
       service: service ? String(service).trim() : "",
       notes: notesStr,
       googleMeetUrl,
       calendarEventUrl,
       bookedAt: new Date().toISOString()
     };
-
-    console.log("[AriseStudio Call Scheduled]:", bookingData);
-
-    // Persist to Turso Cloud SQLite (survives Vercel deploys & cold starts)
-    const turso = getTursoClient();
-    if (turso) {
-      try {
-        await initTursoSchema();
-        await turso.execute({
-          sql: `
-            INSERT INTO bookings (date, timeSlot, name, email, phone, company, timezone, service, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(date, timeSlot) DO UPDATE SET
-              name = excluded.name,
-              email = excluded.email,
-              phone = excluded.phone,
-              company = excluded.company,
-              notes = excluded.notes;
-          `,
-          args: [
-            bookingData.date,
-            bookingData.timeSlot,
-            bookingData.name,
-            bookingData.email,
-            bookingData.phone,
-            bookingData.company,
-            bookingData.timezone,
-            bookingData.service,
-            bookingData.notes,
-          ],
-        });
-      } catch (tursoErr) {
-        console.error("[Turso Persistence Error]:", tursoErr);
-      }
-    }
-
-    await persistSubmission("bookings.jsonl", bookingData);
 
     // Optional email dispatch via SMTP
     const smtpHost = cleanEnvValue(process.env.SMTP_HOST);
@@ -290,7 +100,6 @@ export async function POST(req: Request) {
     const recipient = cleanEnvValue(process.env.CONTACT_NOTIFICATION_EMAIL) || "contact@arisestudio.com";
 
     let emailSent = false;
-    let mailNotice: string | undefined = undefined;
 
     if (smtpHost && smtpUser && smtpPass) {
       try {
@@ -304,15 +113,12 @@ export async function POST(req: Request) {
           },
         });
 
-        const timeRangeStr = formatTimeRange(bookingData.timeSlot);
+        const timeRangeStr = formatBookingRange(startIso, displayTimezone);
+        const displayDate = formatBookingDate(startIso, displayTimezone);
         const hasNotes = Boolean(bookingData.notes && bookingData.notes.length > 0 && bookingData.notes !== "No additional notes provided");
-        const gCalUrl = generateGoogleCalendarUrl({
-          title: "30m Architecture Discovery | AriseStudio",
-          dateStr: bookingData.date,
-          timeSlot: bookingData.timeSlot,
-          details: `30-Minute Architecture Discovery Session with AriseStudio.\n\nAttendee: ${bookingData.name} (${bookingData.phone})\nEmail: ${bookingData.email}${hasNotes ? `\nNotes: ${bookingData.notes}` : ""}\n\nGoogle Meet: ${googleMeetUrl}`,
-          location: googleMeetUrl,
-        });
+        const gCalUrl = googleCalendarUrl(startIso, "30m Architecture Discovery | AriseStudio",
+          `30-Minute Architecture Discovery Session with AriseStudio.\nAttendee: ${name} (${phone})\nEmail: ${email}${hasNotes ? `\nNotes: ${notesStr}` : ""}\nGoogle Meet: ${googleMeetUrl}`,
+          googleMeetUrl);
 
         const htmlContent = `
 <!DOCTYPE html>
@@ -401,7 +207,7 @@ export async function POST(req: Request) {
                         </td>
                         <td valign="middle" style="vertical-align: middle;">
                           <span class="text-strong" style="color: #0f172a; font-size: 14px; font-weight: 600;">
-                            ${escapeHtml(bookingData.date)} &nbsp;·&nbsp; ${timeRangeStr}
+                            ${escapeHtml(displayDate)} &nbsp;·&nbsp; ${escapeHtml(timeRangeStr)}
                           </span>
                         </td>
                       </tr>
@@ -542,93 +348,41 @@ export async function POST(req: Request) {
 
         emailSent = true;
       } catch (mailError) {
-        mailNotice = mailError instanceof Error ? mailError.message : "SMTP send failed";
         console.error("[Schedule Mail Error]:", mailError);
       }
-    } else {
-      mailNotice = "SMTP credentials not fully configured in environment";
     }
 
     return NextResponse.json({
       success: true,
       message: "Appointment confirmed successfully.",
       emailSent,
-      emailNotice: emailSent ? undefined : mailNotice,
+      emailNotice: emailSent ? undefined : "Your slot is reserved, but confirmation email could not be sent. Please save these details or contact us.",
       booking: {
         ...bookingData,
         gcalStatus: generatedMeetUrl ? "created" : "fallback",
-        gcalNotice: generatedMeetUrl ? undefined : gcalNotice,
+        gcalNotice: generatedMeetUrl ? undefined : "Your slot is reserved. Our team will send the meeting link separately.",
       }
     });
   } catch (error) {
+    if (error instanceof SubmissionError) return NextResponse.json({ success: false, error: error.message }, { status: error.status });
     console.error("[Schedule API Error]:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to schedule appointment. Please try again." },
-      { status: 500 }
+      { success: false, error: "We could not reserve your slot. Please try again or contact us." },
+      { status: 503 }
     );
   }
 }
 
 export async function GET() {
+  await connection();
   try {
-    const bookedSlots: string[] = [];
-
-    // 1. Query Turso Cloud SQLite if configured
-    const turso = getTursoClient();
-    if (turso) {
-      try {
-        await initTursoSchema();
-        const result = await turso.execute(
-          "SELECT date, timeSlot FROM bookings ORDER BY id DESC"
-        );
-        for (const row of result.rows) {
-          if (row.date && row.timeSlot) {
-            bookedSlots.push(`${row.date}_${row.timeSlot}`);
-          }
-        }
-        if (bookedSlots.length > 0) {
-          return NextResponse.json({
-            success: true,
-            bookedSlots: Array.from(new Set(bookedSlots)),
-            source: "turso",
-          });
-        }
-      } catch (tursoErr) {
-        console.error("[Turso Fetch Error]:", tursoErr);
-      }
-    }
-
-    // 2. Fallback to local files
-    const primaryPath = path.join(process.cwd(), "data", "bookings.jsonl");
-    const tmpPath = path.join("/tmp", "bookings.jsonl");
-    let content = "";
-    try {
-      content = await fs.readFile(primaryPath, "utf8");
-    } catch {
-      try {
-        content = await fs.readFile(tmpPath, "utf8");
-      } catch {
-        content = "";
-      }
-    }
-    const lines = content.trim().split("\n").filter(Boolean);
-    for (const line of lines) {
-      try {
-        const parsed = JSON.parse(line);
-        if (parsed.date && parsed.timeSlot) {
-          bookedSlots.push(`${parsed.date}_${parsed.timeSlot}`);
-        }
-      } catch {
-        // ignore malformed line
-      }
-    }
-    return NextResponse.json({
-      success: true,
-      bookedSlots: Array.from(new Set(bookedSlots)),
-      source: "local",
-    });
-  } catch {
-    return NextResponse.json({ success: true, bookedSlots: [] });
+    await syncCancelledBookings();
+    const database = await getDatabase();
+    const result = await database.execute("SELECT date, timeSlot FROM bookings");
+    const bookedSlots = [...await legacyBookedSlots(), ...result.rows.map(row => `${row.date}_${row.timeSlot}`)];
+    return NextResponse.json({ success: true, bookedSlots: Array.from(new Set(bookedSlots)) }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("[Booking Availability Error]:", error);
+    return NextResponse.json({ success: false, error: "Booking availability is temporarily unavailable. Please try again." }, { status: 503 });
   }
 }
-

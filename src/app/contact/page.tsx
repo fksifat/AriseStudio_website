@@ -30,11 +30,11 @@ function getInitialService(serviceParam: string, roleParam: string): string {
   return "e-commerce-automation";
 }
 
-function getInitialMessage(roleParam: string): string {
+function getInitialMessage(roleParam: string, messageParam: string): string {
   if (roleParam) {
     return `Hello AriseStudio Team,\n\nI would like to apply for the position: ${roleParam}.\n\n`;
   }
-  return "";
+  return messageParam.slice(0, 5000);
 }
 
 function ContactForm() {
@@ -54,7 +54,7 @@ function ContactForm() {
       company: "",
       service,
       budget: career ? "1 - 3 Years" : "$3,000 - $8,000",
-      message: getInitialMessage(roleParam),
+      message: getInitialMessage(roleParam, searchParams.get("message") || ""),
     };
   });
 

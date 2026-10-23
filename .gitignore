@@ -43,3 +43,6 @@ next-env.d.ts
 # local lead and booking data
 data/*.jsonl
 *.jsonl
+
+# Local SQLite submissions contain personal data
+/data/*.db*

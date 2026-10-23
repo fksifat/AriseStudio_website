@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Clock,
@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Lock,
 } from "lucide-react";
+
+import { bookingSlots, bookingStartIso, bookingTimezones, HOST_TIMEZONE, hostToday, formatBookingDate, formatBookingTime, formatBookingRange, googleCalendarUrl } from "@/lib/booking";
 
 interface DaySchedule {
   dayName: string;
@@ -32,15 +34,9 @@ const useIsClient = () =>
     () => false,
   );
 
-const defaultSlotsByWeekday: Record<number, string[]> = {
-  0: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Sunday
-  1: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Monday
-  2: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Tuesday
-  3: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Wednesday
-  4: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Thursday
-  5: [], // Friday: Studio Closed / Maintenance
-  6: ["10:00am", "11:00am", "12:00pm", "1:00pm", "2:00pm", "3:00pm", "4:00pm"], // Saturday
-};
+const defaultSlotsByWeekday: Record<number, string[]> = Object.fromEntries(
+  Array.from({ length: 7 }, (_, day) => [day, day === 5 ? [] : bookingSlots]),
+);
 
 const dayShortNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const dayFullNames = [
@@ -93,19 +89,16 @@ function generateRollingSchedule(
   return days;
 }
 
-const timezones = [
-  "Bangladesh Time (BST / UTC+6)",
-  "Eastern Time (US & Canada, UTC-4)",
-  "Pacific Time (US & Canada, UTC-7)",
-  "GMT / London (UTC+0)",
-  "Central European Time (UTC+1)",
-  "Dubai / Gulf Time (UTC+4)",
-  "Singapore / SGT (UTC+8)",
-];
-
 export default function AppointmentScheduler() {
   const isClient = useIsClient();
-  const currentDate = useMemo(() => (isClient ? new Date() : null), [isClient]);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const refresh = () => setNow(new Date());
+    const initial = setTimeout(refresh, 0);
+    const timer = setInterval(refresh, 30000);
+    return () => { clearTimeout(initial); clearInterval(timer); };
+  }, []);
+  const currentDate = useMemo(() => now ? hostToday(now) : null, [now]);
   const [scheduleRefDate, setScheduleRefDate] = useState<Date | null>(null);
   const [viewMonthState, setViewMonthState] = useState<number | null>(null);
   const [viewYearState, setViewYearState] = useState<number | null>(null);
@@ -234,50 +227,38 @@ export default function AppointmentScheduler() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedTimezone, setSelectedTimezone] = useState<string>(
-    timezones[0],
+    HOST_TIMEZONE,
   );
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
+  const [availability, setAvailability] = useState<"loading" | "ready" | "error">("loading");
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
+    let loading = false;
     async function loadBookedSlots() {
-      let localSlots: string[] = [];
+      if (loading) return;
+      loading = true;
       try {
-        const cached = localStorage.getItem("arise_booked_slots");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            localSlots = parsed;
-            if (isMounted) {
-              setBookedSlots(parsed);
-            }
-          }
-        }
-      } catch {
-        // ignore localStorage access error
-      }
-
-      try {
-        const res = await fetch("/api/schedule");
+        const res = await fetch("/api/schedule", { cache: "no-store", signal: controller.signal });
         const data = await res.json();
-        if (isMounted && data.success && Array.isArray(data.bookedSlots)) {
-          const merged = Array.from(new Set([...localSlots, ...data.bookedSlots]));
-          setBookedSlots(merged);
-          try {
-            localStorage.setItem("arise_booked_slots", JSON.stringify(merged));
-          } catch {
-            // ignore
-          }
-        }
+        if (!res.ok || !data.success || !Array.isArray(data.bookedSlots)) throw new Error("Availability unavailable");
+        if (!controller.signal.aborted) { setBookedSlots(data.bookedSlots); setAvailability("ready"); }
       } catch {
-        // silently fallback
-      }
+        if (!controller.signal.aborted) setAvailability("error");
+      } finally { loading = false; }
     }
+    const refresh = () => { if (document.visibilityState === "visible") void loadBookedSlots(); };
     loadBookedSlots();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
     return () => {
-      isMounted = false;
+      controller.abort(); clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
-  }, []);
+  }, [availabilityAttempt]);
 
   const isSlotBooked = (dayFullDate: string, slotTime: string) => {
     const key = `${dayFullDate.trim()}_${slotTime.trim()}`.toLowerCase();
@@ -295,6 +276,8 @@ export default function AppointmentScheduler() {
     timeSlot: string;
     timezone: string;
     meetUrl: string;
+    startIso: string;
+    emailSent: boolean;
   } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -306,36 +289,26 @@ export default function AppointmentScheduler() {
 
   const activeDay = scheduleDays[selectedDayIndex] || scheduleDays[0];
 
-  const formattedSlotRange = useMemo(() => {
-    if (!selectedSlot) return "";
-    const match = selectedSlot.match(/(\d+):(\d+)(am|pm)/i);
-    if (!match) return selectedSlot;
-    const hour = parseInt(match[1], 10);
-    const min = parseInt(match[2], 10);
-    const meridiem = match[3].toLowerCase();
-
-    let endMin = min + 30;
-    let endHour = hour;
-    let endMeridiem = meridiem;
-
-    if (endMin >= 60) {
-      endMin -= 60;
-      endHour += 1;
-      if (endHour === 12 && meridiem === "am") endMeridiem = "pm";
-      else if (endHour === 12 && meridiem === "pm") endMeridiem = "am";
-      else if (endHour > 12) endHour = 1;
-    }
-
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    const startStr = `${hour}:${pad(min)}`;
-    const endStr = `${endHour}:${pad(endMin)}${endMeridiem}`;
-
-    return `${startStr} – ${endStr}`;
-  }, [selectedSlot]);
+  const selectedStart = activeDay && selectedSlot ? bookingStartIso(activeDay.fullDate, selectedSlot) : null;
+  const formattedSlotRange = selectedStart ? formatBookingRange(selectedStart, selectedTimezone) : "";
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const modalOpen = isBookingOpen && status !== "confirmed";
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!modalOpen || !dialog) return;
+    const trigger = document.activeElement;
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+    return () => {
+      dialog.close();
+      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+    };
+  }, [modalOpen]);
 
   const handleSlotSelect = (dayIdx: number, slot: string) => {
     const targetDay = scheduleDays[dayIdx];
-    if (!targetDay || isSlotBooked(targetDay.fullDate, slot)) return;
+    const start = targetDay && bookingStartIso(targetDay.fullDate, slot);
+    if (!start || !now || Date.parse(start) <= now.getTime() || availability !== "ready" || isSlotBooked(targetDay.fullDate, slot)) return;
     setSelectedDayIndex(dayIdx);
     setSelectedSlot(slot);
     setIsBookingOpen(true);
@@ -367,6 +340,12 @@ export default function AppointmentScheduler() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (res.status === 409) {
+          setBookedSlots(prev => [...prev, `${activeDay.fullDate}_${selectedSlot}`]);
+          setIsBookingOpen(false);
+          setAvailability("loading");
+          setAvailabilityAttempt(attempt => attempt + 1);
+        }
         throw new Error(data.error || "Failed to schedule appointment.");
       }
 
@@ -375,18 +354,11 @@ export default function AppointmentScheduler() {
         timeSlot: selectedSlot,
         timezone: selectedTimezone,
         meetUrl: data.booking.googleMeetUrl,
+        startIso: data.booking.startIso,
+        emailSent: data.emailSent,
       });
-      // Append booked slot so it is immediately rendered as disabled and persisted
-      const newSlotKey = `${activeDay.fullDate.trim()}_${selectedSlot.trim()}`;
-      setBookedSlots((prev) => {
-        const updated = Array.from(new Set([...prev, newSlotKey]));
-        try {
-          localStorage.setItem("arise_booked_slots", JSON.stringify(updated));
-        } catch {
-          // ignore
-        }
-        return updated;
-      });
+      const newSlotKey = `${activeDay.fullDate}_${selectedSlot}`;
+      setBookedSlots(prev => Array.from(new Set([...prev, newSlotKey])));
       setStatus("confirmed");
     } catch (err) {
       setStatus("error");
@@ -396,52 +368,10 @@ export default function AppointmentScheduler() {
     }
   };
 
-  const generateGoogleCalendarUrl = () => {
-    if (!confirmedBooking) return "#";
-    const title = encodeURIComponent(
-      "30 minutes with AriseStudio Architecture Team",
-    );
-    const details = encodeURIComponent(
-      `Technical Discovery Call with AriseStudio.\nAttendee: ${formData.name} (${formData.phone})\nEmail: ${formData.email}${confirmedBooking.meetUrl ? `\nGoogle Meet: ${confirmedBooking.meetUrl}` : ""}`,
-    );
-    const location = encodeURIComponent(
-      confirmedBooking.meetUrl || "Google Meet (Link in confirmation email)",
-    );
-
-    try {
-      const match = confirmedBooking.timeSlot.match(/(\d+):(\d+)(am|pm)/i);
-      if (match) {
-        let hours = parseInt(match[1], 10);
-        const mins = parseInt(match[2], 10);
-        const isPM = match[3].toLowerCase() === "pm";
-        if (isPM && hours < 12) hours += 12;
-        if (!isPM && hours === 12) hours = 0;
-
-        const d = new Date(confirmedBooking.date);
-        const tzMatch = confirmedBooking.timezone.match(/(?:GMT|UTC)\s*([+-]\d+)/i);
-        let utcTimestamp: number;
-        if (tzMatch) {
-          const offsetHours = parseInt(tzMatch[1], 10);
-          utcTimestamp = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), hours - offsetHours, mins);
-        } else {
-          d.setHours(hours, mins, 0, 0);
-          utcTimestamp = d.getTime();
-        }
-
-        const formatGCal = (dt: Date) =>
-          dt
-            .toISOString()
-            .replace(/[-:]/g, "")
-            .replace(/\.\d{3}/, "");
-        const dates = `${formatGCal(new Date(utcTimestamp))}/${formatGCal(new Date(utcTimestamp + 30 * 60 * 1000))}`;
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
-      }
-    } catch {
-      // fallback if parsing fails
-    }
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
-  };
+  const calendarUrl = confirmedBooking ? googleCalendarUrl(confirmedBooking.startIso,
+    "30 minutes with AriseStudio Architecture Team",
+    `Technical Discovery Call with AriseStudio.\nAttendee: ${formData.name} (${formData.phone})\nEmail: ${formData.email}\nGoogle Meet: ${confirmedBooking.meetUrl}`,
+    confirmedBooking.meetUrl) : "#";
 
   const monthHeader = `${monthNames[viewMonth]} ${viewYear}`;
 
@@ -475,17 +405,18 @@ export default function AppointmentScheduler() {
           <div className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-white/[0.08] text-xs font-mono text-slate-300">
             <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <select
+              aria-label="Display timezone"
               value={selectedTimezone}
               onChange={(e) => setSelectedTimezone(e.target.value)}
               className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-1 text-xs"
             >
-              {timezones.map((tz) => (
+              {bookingTimezones.map((tz) => (
                 <option
-                  key={tz}
-                  value={tz}
+                  key={tz.value}
+                  value={tz.value}
                   className="bg-[#09101d] text-slate-200"
                 >
-                  {tz}
+                  {tz.label}
                 </option>
               ))}
             </select>
@@ -508,7 +439,7 @@ export default function AppointmentScheduler() {
           </div>
 
           <span className="text-xs font-mono uppercase tracking-widest text-emerald-400 font-semibold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            Confirmed & Verified
+            Slot Reserved
           </span>
 
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white mt-3">
@@ -517,22 +448,20 @@ export default function AppointmentScheduler() {
 
           <p className="text-slate-300 text-sm max-w-lg mx-auto mt-2 leading-relaxed">
             We have reserved your slot with an AriseStudio Principal Systems
-            Architect. A calendar invitation has been dispatched to{" "}
-            <strong>{formData.email}</strong>.
+            Architect. {confirmedBooking.emailSent ? <>Confirmation details have been emailed to <strong>{formData.email}</strong>.</> : <>Confirmation email could not be sent. Please save these details or contact us directly.</>}
           </p>
 
           <div className="my-8 max-w-md mx-auto p-5 rounded-2xl bg-[#004157]/30 border border-white/[0.08] text-left space-y-3 font-mono text-xs">
             <div className="flex justify-between items-center pb-2 border-b border-slate-800">
               <span className="text-slate-400">Date:</span>
               <span className="text-white font-bold">
-                {confirmedBooking.date}
+                {formatBookingDate(confirmedBooking.startIso, confirmedBooking.timezone)}
               </span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-slate-800">
               <span className="text-slate-400">Time:</span>
               <span className="text-emerald-400 font-bold">
-                {confirmedBooking.timeSlot} (
-                {confirmedBooking.timezone.split(" ")[0]})
+                {formatBookingRange(confirmedBooking.startIso, confirmedBooking.timezone)}
               </span>
             </div>
             {confirmedBooking.meetUrl ? (
@@ -552,7 +481,7 @@ export default function AppointmentScheduler() {
               <div className="flex flex-col gap-1 pt-1">
                 <span className="text-slate-400">Video Conference:</span>
                 <span className="text-slate-200">
-                  Google Meet link is attached directly to your calendar invite.
+                  Our team will send your meeting link separately. Please contact us if you need it sooner.
                 </span>
               </div>
             )}
@@ -560,7 +489,7 @@ export default function AppointmentScheduler() {
 
           <div className="flex flex-wrap items-center justify-center gap-4">
             <a
-              href={generateGoogleCalendarUrl()}
+              href={calendarUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all text-xs shadow-lg shadow-emerald-500/20"
@@ -583,6 +512,11 @@ export default function AppointmentScheduler() {
       ) : (
         /* Main Schedule Section - Single Card Interface */
         <div className="pt-2">
+          <p className="text-xs text-slate-400 mb-3">Calendar columns follow Bangladesh dates. Slot times are shown in your selected timezone; dates are included when they differ.</p>
+          {availability !== "ready" && <div role={availability === "error" ? "alert" : "status"} className="mb-4 text-sm text-amber-300">
+            {availability === "loading" ? "Checking available slots…" : <>Availability is temporarily unavailable. <button type="button" className="underline" onClick={() => { setAvailability("loading"); setAvailabilityAttempt(n => n + 1); }}>Try again</button></>}
+          </div>}
+          {status === "error" && !isBookingOpen && <p role="alert" className="text-sm text-rose-300 mb-4">{errorMessage}</p>}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-white/[0.06]">
             <h3 className="text-base sm:text-lg font-bold text-white">
               Select an appointment time
@@ -817,31 +751,37 @@ export default function AppointmentScheduler() {
                       {day.slots.length > 0 ? (
                         day.slots.map((slot) => {
                           const isBooked = isSlotBooked(day.fullDate, slot);
+                          const start = bookingStartIso(day.fullDate, slot)!;
+                          const isPast = !now || Date.parse(start) <= now.getTime();
+                          const disabled = isBooked || isPast || availability !== "ready";
+                          const displayTime = formatBookingTime(start, selectedTimezone, false);
+                          const displayDate = formatBookingDate(start, selectedTimezone);
+                          const differentDate = displayDate !== day.fullDate;
                           const isPicked =
                             selectedDayIndex === dIdx && selectedSlot === slot;
                           return (
                             <button
                               key={slot}
                               type="button"
-                              disabled={isBooked}
-                              onClick={() => !isBooked && handleSlotSelect(dIdx, slot)}
+                              disabled={disabled}
+                              onClick={() => !disabled && handleSlotSelect(dIdx, slot)}
                               className={`w-full py-2 px-1 text-center rounded-xl sm:rounded-full text-xs font-mono font-medium transition-all duration-150 border flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                                isBooked
+                                disabled
                                   ? "bg-slate-950/50 text-slate-500 border-slate-800/60 select-none cursor-not-allowed disabled:cursor-not-allowed hover:border-slate-800/60 hover:bg-slate-950/50"
                                   : isPicked
                                     ? "bg-emerald-400 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/30 cursor-pointer"
                                     : "bg-slate-900/90 text-slate-200 border-slate-800 hover:border-emerald-500/50 hover:bg-[#004157]/40 hover:text-white cursor-pointer"
                               }`}
-                              title={
-                                isBooked
-                                  ? `${slot} (Booked — Reserved)`
-                                  : `Select ${slot}`
-                              }
+                              title={isBooked ? `${displayDate} ${displayTime} (Booked)`
+                                : isPast ? "This appointment time has passed"
+                                : availability !== "ready" ? "Availability is not confirmed yet"
+                                : `Select ${displayDate} ${displayTime}`}
+                              aria-label={`${displayDate}, ${displayTime}${isBooked ? ", booked" : isPast ? ", passed" : ""}`}
                             >
                               {isBooked && (
                                 <Lock className="w-3 h-3 text-slate-500/80 shrink-0" />
                               )}
-                              <span>{slot}</span>
+                              <span>{displayTime}{differentDate && <span className="block text-[10px]">{new Date(start).toLocaleDateString("en-US", { timeZone: selectedTimezone, month: "short", day: "numeric" })}</span>}</span>
                             </button>
                           );
                         })
@@ -861,9 +801,12 @@ export default function AppointmentScheduler() {
 
       {/* Confirmation Slide-In Modal / Panel rendered via Portal to escape backdrop-filter */}
       {isBookingOpen && status !== "confirmed" && isClient && typeof document !== "undefined" && createPortal(
-        <div 
-          onClick={() => setIsBookingOpen(false)}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+        <dialog
+          ref={dialogRef}
+          aria-labelledby="booking-dialog-title"
+          onCancel={(event) => { event.preventDefault(); if (status !== "loading") setIsBookingOpen(false); }}
+          onClick={(event) => { if (event.target === event.currentTarget && status !== "loading") setIsBookingOpen(false); }}
+          className="m-auto w-[calc(100%-2rem)] max-w-md max-h-[90vh] overflow-y-auto p-0 bg-transparent text-slate-100 backdrop:bg-black/80 backdrop:backdrop-blur-md"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
@@ -872,22 +815,20 @@ export default function AppointmentScheduler() {
             {/* Header matching Google Calendar style */}
             <div className="flex items-start justify-between pb-3 border-b border-white/[0.08]">
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-white tracking-tight">
+                <h3 id="booking-dialog-title" className="text-lg font-bold text-white tracking-tight">
                   30 minutes with AriseStudio
                 </h3>
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono font-medium">
                   <CalendarIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>
-                    {activeDay ? activeDay.fullDate.replace(/,\s*\d{4}$/, "") : ""} · {formattedSlotRange}
+                    {selectedStart ? formatBookingDate(selectedStart, selectedTimezone) : ""} · {formattedSlotRange}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 font-mono">
                   <span className="flex items-center gap-1">
                     <Globe className="w-3 h-3 text-slate-500 shrink-0" />
                     <span>
-                      {selectedTimezone.includes("Bangladesh")
-                        ? "(GMT+06:00) BST"
-                        : selectedTimezone}
+                      {selectedTimezone}
                     </span>
                   </span>
                   <span className="text-slate-600">·</span>
@@ -902,23 +843,28 @@ export default function AppointmentScheduler() {
                 onClick={() => setIsBookingOpen(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
                 title="Close"
+                aria-label="Close booking dialog"
+                disabled={status === "loading"}
               >
                 ✕
               </button>
             </div>
 
             {status === "error" && (
-              <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div role="alert" className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
                 {errorMessage}
               </div>
             )}
 
             <form onSubmit={handleBookingSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label htmlFor="booking-name" className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Full Name <span className="text-emerald-400">*</span>
                 </label>
                 <input
+                  id="booking-name"
+                  disabled={status === "loading"}
+                  maxLength={120}
                   type="text"
                   required
                   value={formData.name}
@@ -931,10 +877,13 @@ export default function AppointmentScheduler() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label htmlFor="booking-email" className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Email Address <span className="text-emerald-400">*</span>
                 </label>
                 <input
+                  id="booking-email"
+                  disabled={status === "loading"}
+                  maxLength={254}
                   type="email"
                   required
                   value={formData.email}
@@ -947,10 +896,13 @@ export default function AppointmentScheduler() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label htmlFor="booking-phone" className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Phone Number <span className="text-emerald-400">*</span>
                 </label>
                 <input
+                  id="booking-phone"
+                  disabled={status === "loading"}
+                  maxLength={64}
                   type="tel"
                   required
                   value={formData.phone}
@@ -963,10 +915,13 @@ export default function AppointmentScheduler() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label htmlFor="booking-notes" className="block text-[11px] font-semibold text-slate-300 mb-1">
                   Project Notes (Optional)
                 </label>
                 <input
+                  id="booking-notes"
+                  disabled={status === "loading"}
+                  maxLength={5000}
                   type="text"
                   value={formData.notes}
                   onChange={(e) =>
@@ -998,7 +953,7 @@ export default function AppointmentScheduler() {
               </div>
             </form>
           </div>
-        </div>,
+        </dialog>,
         document.body
       )}
     </div>

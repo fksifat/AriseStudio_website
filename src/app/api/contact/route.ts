@@ -1,26 +1,10 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import fs from "fs/promises";
-import path from "path";
+import { getDatabase } from "@/lib/turso";
+import { limitSubmission, readSubmission, SubmissionError } from "@/lib/submissions";
 
 const escapeHtml = (str: string) =>
   str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-
-// shortcut: local JSONL fallback; upgrade to PostgreSQL/Supabase when scaling to multi-region serverless
-async function persistSubmission(filename: string, data: Record<string, unknown>) {
-  const line = JSON.stringify(data) + "\n";
-  try {
-    const dir = path.join(process.cwd(), "data");
-    await fs.mkdir(dir, { recursive: true });
-    await fs.appendFile(path.join(dir, filename), line, "utf8");
-  } catch {
-    try {
-      await fs.appendFile(path.join("/tmp", filename), line, "utf8");
-    } catch (err) {
-      console.error("[Persistence Error]:", err);
-    }
-  }
-}
 
 function cleanEnvValue(value?: string): string {
   if (!value) return "";
@@ -33,30 +17,12 @@ function cleanEnvValue(value?: string): string {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, email, phone, company, service, budget, message } = body;
-
-    // Server-side validation
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Name is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { success: false, error: "A valid corporate email address is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!message || typeof message !== "string" || message.trim().length < 5) {
-      return NextResponse.json(
-        { success: false, error: "Please provide a brief message describing your requirements." },
-        { status: 400 }
-      );
-    }
+    limitSubmission(req, "contact");
+    const { name, email, phone, company, service, budget, message } = await readSubmission(req, {
+      name: { min: 1, max: 120 }, email: { min: 1, max: 254 }, phone: { max: 64 },
+      company: { max: 300 }, service: { max: 100 }, budget: { max: 100 }, message: { min: 5, max: 5000 },
+    });
+    limitSubmission(req, "contact", email);
 
     const leadData = {
       name: name.trim(),
@@ -69,8 +35,8 @@ export async function POST(req: Request) {
       submittedAt: new Date().toISOString(),
     };
 
-    console.log("[AriseStudio Contact Lead Received]:", leadData);
-    await persistSubmission("leads.jsonl", leadData);
+    const database = await getDatabase();
+    await database.execute({ sql: "INSERT INTO contact_leads (submission) VALUES (?)", args: [JSON.stringify(leadData)] });
 
     // Optional email dispatch via SMTP if environment variables are configured
     const smtpHost = cleanEnvValue(process.env.SMTP_HOST);
@@ -160,10 +126,11 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof SubmissionError) return NextResponse.json({ success: false, error: error.message }, { status: error.status });
     console.error("[Contact API Error]:", error);
     return NextResponse.json(
-      { success: false, error: "An unexpected error occurred. Please try again." },
-      { status: 500 }
+      { success: false, error: "We could not save your request. Please try again or email us directly." },
+      { status: 503 }
     );
   }
 }
