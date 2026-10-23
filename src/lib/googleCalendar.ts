@@ -93,9 +93,9 @@ function parseBookingToUtcIso(dateStr: string, timeSlot: string): { startIso: st
  * Creates an event on the primary Google Calendar with a unique Google Meet video room
  */
 export async function createGoogleCalendarEvent(params: CreateMeetingParams): Promise<CalendarEventResult> {
-  const clientId = cleanEnvValue(process.env.GOOGLE_CLIENT_ID);
-  const clientSecret = cleanEnvValue(process.env.GOOGLE_CLIENT_SECRET);
-  const refreshToken = cleanEnvValue(process.env.GOOGLE_REFRESH_TOKEN);
+  const clientId = cleanEnvValue(process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID);
+  const clientSecret = cleanEnvValue(process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT || process.env.GOOGLE_SECRET);
+  const refreshToken = cleanEnvValue(process.env.GOOGLE_REFRESH_TOKEN || process.env.REFRESH_TOKEN);
 
   // If credentials are not configured, return null gracefully so fallback room is used
   if (!clientId || !clientSecret || !refreshToken) {

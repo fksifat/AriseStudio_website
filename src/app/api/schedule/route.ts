@@ -228,12 +228,7 @@ export async function POST(req: Request) {
       console.warn("[Google Calendar Service Notice]:", gcalErr);
     }
 
-    const defaultMeetUrl =
-      process.env.GOOGLE_MEET_URL?.trim() ||
-      process.env.NEXT_PUBLIC_GOOGLE_MEET_URL?.trim() ||
-      "https://meet.google.com/lookup/arisestudio-discovery";
-
-    const googleMeetUrl = generatedMeetUrl || extractedMeetingUrl || defaultMeetUrl;
+    const googleMeetUrl = generatedMeetUrl || extractedMeetingUrl || "";
 
     const bookingData = {
       name: name.trim(),
@@ -435,6 +430,7 @@ export async function POST(req: Request) {
               </table>
 
               <!-- Google Meet CTA Box (Compact) -->
+              ${googleMeetUrl ? `
               <div style="text-align: center; margin: 18px 0 14px 0;">
                 <a href="${encodeURI(googleMeetUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; background-color: #10b981; color: #022c22; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; padding: 11px 18px; border-radius: 8px; letter-spacing: 0.01em;">
                   <img src="${iconVideoUrl}" width="16" height="16" style="vertical-align: -2px; display: inline-block; margin-right: 6px; border: 0;" alt="" />
@@ -457,6 +453,23 @@ export async function POST(req: Request) {
                   </a>
                 </div>
               </div>
+              ` : `
+              <div style="text-align: center; margin: 18px 0 14px 0;">
+                <div style="margin-top: 10px; text-align: center;">
+                  <a href="${gCalUrl}" target="_blank" rel="noopener noreferrer" class="gcal-btn" style="display: inline-block; color: #0f172a; background-color: #ffffff; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; text-decoration: none; padding: 7px 14px; border-radius: 6px;">
+                    <span class="gcal-icon-light" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">
+                      <img src="${iconCalendarBtnDarkUrl}" width="13" height="13" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                    </span>
+                    <!--[if !mso]><!-->
+                    <span class="gcal-icon-dark" style="display: none; vertical-align: -2px; margin-right: 5px;">
+                      <img src="${iconCalendarBtnLightUrl}" width="13" height="13" style="display: inline-block; vertical-align: middle; border: 0;" alt="" />
+                    </span>
+                    <!--<![endif]-->
+                    Add to Google Calendar
+                  </a>
+                </div>
+              </div>
+              `}
 
               <!-- Reservation Details Table (Compact) -->
               <div class="border-divider" style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 16px;">
