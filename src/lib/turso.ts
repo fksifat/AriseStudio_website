@@ -3,9 +3,18 @@ import { createClient, type Client } from "@libsql/client";
 let client: Client | null = null;
 let schemaInitialized = false;
 
+function cleanEnvValue(value?: string): string {
+  if (!value) return "";
+  let v = value.trim();
+  while ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
 export function getTursoClient(): Client | null {
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const url = cleanEnvValue(process.env.TURSO_DATABASE_URL);
+  const authToken = cleanEnvValue(process.env.TURSO_AUTH_TOKEN);
 
   if (!url) {
     return null;
@@ -14,7 +23,7 @@ export function getTursoClient(): Client | null {
   if (!client) {
     client = createClient({
       url,
-      authToken,
+      authToken: authToken || undefined,
     });
   }
 

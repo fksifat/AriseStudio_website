@@ -22,6 +22,15 @@ async function persistSubmission(filename: string, data: Record<string, unknown>
   }
 }
 
+function cleanEnvValue(value?: string): string {
+  if (!value) return "";
+  let v = value.trim();
+  while ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -64,11 +73,11 @@ export async function POST(req: Request) {
     await persistSubmission("leads.jsonl", leadData);
 
     // Optional email dispatch via SMTP if environment variables are configured
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const recipient = process.env.CONTACT_NOTIFICATION_EMAIL || "contact@arisestudio.com";
+    const smtpHost = cleanEnvValue(process.env.SMTP_HOST);
+    const smtpPort = process.env.SMTP_PORT ? parseInt(cleanEnvValue(process.env.SMTP_PORT), 10) : 587;
+    const smtpUser = cleanEnvValue(process.env.SMTP_USER);
+    const smtpPass = cleanEnvValue(process.env.SMTP_PASS);
+    const recipient = cleanEnvValue(process.env.CONTACT_NOTIFICATION_EMAIL) || "contact@arisestudio.com";
 
     let emailSent = false;
 

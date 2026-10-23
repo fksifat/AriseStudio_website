@@ -109,6 +109,15 @@ function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
   return true;
 }
 
+function cleanEnvValue(value?: string): string {
+  if (!value) return "";
+  let v = value.trim();
+  while ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -193,6 +202,7 @@ export async function POST(req: Request) {
 
     let generatedMeetUrl: string | null = null;
     let calendarEventUrl: string | null = null;
+    let gcalNotice: string | undefined = undefined;
 
     try {
       const gcal = await createGoogleCalendarEvent({
@@ -210,9 +220,11 @@ export async function POST(req: Request) {
         calendarEventUrl = gcal.calendarEventUrl;
         console.log("[Google Meet Created Successfully]:", generatedMeetUrl);
       } else {
+        gcalNotice = gcal.error;
         console.warn("[Google Calendar Generation Notice]:", gcal.error);
       }
     } catch (gcalErr) {
+      gcalNotice = gcalErr instanceof Error ? gcalErr.message : "Calendar service error";
       console.warn("[Google Calendar Service Notice]:", gcalErr);
     }
 
@@ -276,11 +288,11 @@ export async function POST(req: Request) {
     await persistSubmission("bookings.jsonl", bookingData);
 
     // Optional email dispatch via SMTP
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const recipient = process.env.CONTACT_NOTIFICATION_EMAIL || "contact@arisestudio.com";
+    const smtpHost = cleanEnvValue(process.env.SMTP_HOST);
+    const smtpPort = process.env.SMTP_PORT ? parseInt(cleanEnvValue(process.env.SMTP_PORT), 10) : 587;
+    const smtpUser = cleanEnvValue(process.env.SMTP_USER);
+    const smtpPass = cleanEnvValue(process.env.SMTP_PASS);
+    const recipient = cleanEnvValue(process.env.CONTACT_NOTIFICATION_EMAIL) || "contact@arisestudio.com";
 
     let emailSent = false;
 
@@ -524,7 +536,11 @@ export async function POST(req: Request) {
       success: true,
       message: "Appointment confirmed successfully.",
       emailSent,
-      booking: bookingData
+      booking: {
+        ...bookingData,
+        gcalStatus: generatedMeetUrl ? "created" : "fallback",
+        gcalNotice: generatedMeetUrl ? undefined : gcalNotice,
+      }
     });
   } catch (error) {
     console.error("[Schedule API Error]:", error);

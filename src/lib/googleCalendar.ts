@@ -22,6 +22,19 @@ interface CalendarEventResult {
 }
 
 /**
+ * Cleans environment variable value by trimming and removing outer quotes
+ * (safeguards against values pasted into Vercel UI with surrounding quotes).
+ */
+function cleanEnvValue(value?: string): string {
+  if (!value) return "";
+  let v = value.trim();
+  while ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
+/**
  * Exchanges Google OAuth2 Refresh Token for a fresh Access Token
  */
 async function getGoogleAccessToken(clientId: string, clientSecret: string, refreshToken: string): Promise<string> {
@@ -38,6 +51,7 @@ async function getGoogleAccessToken(clientId: string, clientSecret: string, refr
 
   const data = await res.json();
   if (!res.ok || !data.access_token) {
+    console.error("[Google OAuth Token Error]:", data);
     throw new Error(data.error_description || data.error || "Failed to refresh Google access token.");
   }
 
@@ -79,18 +93,24 @@ function parseBookingToUtcIso(dateStr: string, timeSlot: string): { startIso: st
  * Creates an event on the primary Google Calendar with a unique Google Meet video room
  */
 export async function createGoogleCalendarEvent(params: CreateMeetingParams): Promise<CalendarEventResult> {
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
+  const clientId = cleanEnvValue(process.env.GOOGLE_CLIENT_ID);
+  const clientSecret = cleanEnvValue(process.env.GOOGLE_CLIENT_SECRET);
+  const refreshToken = cleanEnvValue(process.env.GOOGLE_REFRESH_TOKEN);
 
   // If credentials are not configured, return null gracefully so fallback room is used
   if (!clientId || !clientSecret || !refreshToken) {
+    const missing = [
+      !clientId && "GOOGLE_CLIENT_ID",
+      !clientSecret && "GOOGLE_CLIENT_SECRET",
+      !refreshToken && "GOOGLE_REFRESH_TOKEN",
+    ].filter(Boolean).join(", ");
+    console.warn(`[Google Calendar Notice]: Missing credentials in environment (${missing})`);
     return {
       success: false,
       meetUrl: null,
       eventId: null,
       calendarEventUrl: null,
-      error: "Google Calendar API credentials not configured in environment.",
+      error: `Missing credentials in environment: ${missing}`,
     };
   }
 
