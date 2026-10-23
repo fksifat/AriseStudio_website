@@ -209,6 +209,8 @@ export async function POST(req: Request) {
         generatedMeetUrl = gcal.meetUrl;
         calendarEventUrl = gcal.calendarEventUrl;
         console.log("[Google Meet Created Successfully]:", generatedMeetUrl);
+      } else {
+        console.warn("[Google Calendar Generation Notice]:", gcal.error);
       }
     } catch (gcalErr) {
       console.warn("[Google Calendar Service Notice]:", gcalErr);
