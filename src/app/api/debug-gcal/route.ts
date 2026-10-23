@@ -10,22 +10,48 @@ function cleanEnvValue(value?: string): string {
   return v;
 }
 
-export async function GET() {
-  const rawClientId = process.env.GOOGLE_CLIENT_ID;
-  const rawClientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT || process.env.GOOGLE_SECRET;
-  const rawRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+function getEnvFuzzy(targetNames: string[]): { value: string; matchedKey?: string } {
+  // 1. Direct match
+  for (const name of targetNames) {
+    if (process.env[name]) {
+      return { value: cleanEnvValue(process.env[name]), matchedKey: name };
+    }
+  }
+  // 2. Case-insensitive / space-tolerant match
+  const normalizedTargets = targetNames.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  for (const [k, v] of Object.entries(process.env)) {
+    const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (let i = 0; i < normalizedTargets.length; i++) {
+      if (cleanK === normalizedTargets[i] || cleanK.includes(normalizedTargets[i])) {
+        return { value: cleanEnvValue(v), matchedKey: k };
+      }
+    }
+  }
+  return { value: "" };
+}
 
-  const clientId = cleanEnvValue(rawClientId);
-  const clientSecret = cleanEnvValue(rawClientSecret);
-  const refreshToken = cleanEnvValue(rawRefreshToken);
+export async function GET() {
+  const clientMatch = getEnvFuzzy(["GOOGLE_CLIENT_ID", "CLIENT_ID"]);
+  const secretMatch = getEnvFuzzy(["GOOGLE_CLIENT_SECRET", "CLIENT_SECRET", "GOOGLE_SECRET", "GOOGLE_CLIENT", "GOCSPX"]);
+  const refreshMatch = getEnvFuzzy(["GOOGLE_REFRESH_TOKEN", "REFRESH_TOKEN"]);
+
+  const clientId = clientMatch.value;
+  const clientSecret = secretMatch.value;
+  const refreshToken = refreshMatch.value;
+
+  const allEnvKeys = Object.keys(process.env).sort();
 
   const envCheck = {
-    GOOGLE_CLIENT_ID_present: Boolean(rawClientId),
-    GOOGLE_CLIENT_ID_length: rawClientId?.length || 0,
-    GOOGLE_CLIENT_SECRET_present: Boolean(rawClientSecret),
-    GOOGLE_CLIENT_SECRET_length: rawClientSecret?.length || 0,
-    GOOGLE_REFRESH_TOKEN_present: Boolean(rawRefreshToken),
-    GOOGLE_REFRESH_TOKEN_length: rawRefreshToken?.length || 0,
+    GOOGLE_CLIENT_ID_found: Boolean(clientId),
+    GOOGLE_CLIENT_ID_matched_key: clientMatch.matchedKey || "NONE",
+    GOOGLE_CLIENT_ID_length: clientId.length,
+    GOOGLE_CLIENT_SECRET_found: Boolean(clientSecret),
+    GOOGLE_CLIENT_SECRET_matched_key: secretMatch.matchedKey || "NONE",
+    GOOGLE_CLIENT_SECRET_length: clientSecret.length,
+    GOOGLE_REFRESH_TOKEN_found: Boolean(refreshToken),
+    GOOGLE_REFRESH_TOKEN_matched_key: refreshMatch.matchedKey || "NONE",
+    GOOGLE_REFRESH_TOKEN_length: refreshToken.length,
+    all_available_env_keys: allEnvKeys,
   };
 
   if (!clientId || !clientSecret || !refreshToken) {

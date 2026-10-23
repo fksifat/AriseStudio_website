@@ -34,6 +34,22 @@ function cleanEnvValue(value?: string): string {
   return v;
 }
 
+function getEnvFuzzy(targetNames: string[]): string {
+  for (const name of targetNames) {
+    if (process.env[name]) return cleanEnvValue(process.env[name]);
+  }
+  const normalizedTargets = targetNames.map((t) => t.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  for (const [k, v] of Object.entries(process.env)) {
+    const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (let i = 0; i < normalizedTargets.length; i++) {
+      if (cleanK === normalizedTargets[i] || cleanK.includes(normalizedTargets[i])) {
+        return cleanEnvValue(v);
+      }
+    }
+  }
+  return "";
+}
+
 /**
  * Exchanges Google OAuth2 Refresh Token for a fresh Access Token
  */
@@ -93,9 +109,9 @@ function parseBookingToUtcIso(dateStr: string, timeSlot: string): { startIso: st
  * Creates an event on the primary Google Calendar with a unique Google Meet video room
  */
 export async function createGoogleCalendarEvent(params: CreateMeetingParams): Promise<CalendarEventResult> {
-  const clientId = cleanEnvValue(process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID);
-  const clientSecret = cleanEnvValue(process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT || process.env.GOOGLE_SECRET);
-  const refreshToken = cleanEnvValue(process.env.GOOGLE_REFRESH_TOKEN || process.env.REFRESH_TOKEN);
+  const clientId = getEnvFuzzy(["GOOGLE_CLIENT_ID", "CLIENT_ID"]);
+  const clientSecret = getEnvFuzzy(["GOOGLE_CLIENT_SECRET", "CLIENT_SECRET", "GOOGLE_SECRET", "GOOGLE_CLIENT", "GOCSPX"]);
+  const refreshToken = getEnvFuzzy(["GOOGLE_REFRESH_TOKEN", "REFRESH_TOKEN"]);
 
   // If credentials are not configured, return null gracefully so fallback room is used
   if (!clientId || !clientSecret || !refreshToken) {
